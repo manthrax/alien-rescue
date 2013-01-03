@@ -10,8 +10,8 @@ var fs = require('fs')
 var chatServer = http.createServer(function(req, res) {
     res.writeHead(200, { 'Content-type': 'text/html'});
     res.end(fs.readFileSync(__dirname + '/index.html'));
-}).listen((443), function() {
-    console.log('Listening at: http://localhost:'+(443));
+}).listen((process.env.PORT || 3000), function() {
+    console.log('Listening at: http://localhost:'+(process.env.PORT || 3000));
 });
  
 socketio.listen(chatServer).on('connection', function (socket) {

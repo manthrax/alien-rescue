@@ -169,7 +169,7 @@ your browser does not support the video tag
             {
                 var incomingChatElem=document.getElementById('incomingChatMessages');
                 var outgoingChatElem=document.getElementById('outgoingChatMessage');
-                var iosocket = io.connect(":3000");
+                var iosocket = io.connect(":8989");
                 iosocket.on('connect', function () {
                     incomingChatElem.innerHTML+='<li>Connected</li>';
                     iosocket.on('message', function(message) {incomingChatElem.innerHTML+='<li>'+message+'</li>';});

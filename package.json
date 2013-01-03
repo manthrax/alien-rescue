@@ -1,6 +1,23 @@
 {
   "name": "alien-rescue",
   "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "node": "0.8.x"
+  },
   "dependencies": {
+    "socket.io": "0.9.x",
+    "connect": "~2.x.x",
+    "async": "~0.1.22",
+    "http": "~0.0.1",
+    "fs": "~0.0.1"
+  },
+  "devDependencies": {
+    "node-dev": "0.x.x",
+    "request": "2.x.x",
+    "mocha": "1.x.x"
+  },
+  "scripts": {
+    "start": "node ./app.js",
   }
 }

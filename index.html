@@ -169,7 +169,7 @@ your browser does not support the video tag
             {
                 var incomingChatElem=document.getElementById('incomingChatMessages');
                 var outgoingChatElem=document.getElementById('outgoingChatMessage');
-                var iosocket = io.connect(":3001");
+                var iosocket = io.connect(":6379");
                 iosocket.on('connect', function () {
                     incomingChatElem.innerHTML+='<li>Connected</li>';
                     iosocket.on('message', function(message) {incomingChatElem.innerHTML+='<li>'+message+'</li>';});
@@ -203,11 +203,11 @@ your browser does not support the video tag
 </div>
 
 
-<iframe id="shaderIFrame" onload="console.log('Frame Loaded');" src="shaders.html">
+<!--iframe id="shaderIFrame" onload="console.log('Frame Loaded');" src="shaders.html">
 </iframe>
 <script type="text/javascript">
+</script-->
 
-</script>
 <script id='shaderScript' type="text/glsl">
 
 SCRIPT='chopperVertexShader';

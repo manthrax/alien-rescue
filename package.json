@@ -8,9 +8,9 @@
   "dependencies": {
     "socket.io": "0.9.x",
     "connect": "~2.x.x",
-    "async": "~0.1.22",
-    "http": "~0.0.1",
-    "fs": "~0.0.1"
+    "async": "~x.x.x",
+    "http": "~x.x.x",
+    "fs": "~x.x.x"
   },
   "devDependencies": {
     "node-dev": "0.x.x",

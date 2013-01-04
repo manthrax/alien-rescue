@@ -37,7 +37,6 @@ var g_showHelp=false;
 var g_eyeSpeed = 0.01;
 var g_eyeHeight = 8;
 var g_eyeRadius = 9;
-var g_buttons = 0;
 var g_dragStart = {
     x: 0,
     y: 0
@@ -51,12 +50,9 @@ var g_dragDelta = {
     y: 0
 };
 
-var g_controlsActive = {
-    thrust: [false,false],
-    yaw: [false,false],
-    pitch: [false,false],
-    roll: [false,false]
-};
+var g_audioLevel=1.0;
+
+var g_buttons = 0;
 
 var g_nullControlsActive = {
     thrust: [false,false],
@@ -68,40 +64,6 @@ var g_nullControlsActive = {
 
 var g_controlFlipover=false;
 
-var g_controls={
-    defaults:{
-        thrust:0.0,
-        pitch:0.0,
-        yaw:0.0,
-        roll:0.0
-    },
-    ranges:{
-        thrust:[0.0,0.05],
-        pitch:[-0.03,0.03],
-        yaw:[-0.03,0.03],
-        roll:[-0.03,0.03]
-        },
-    inputs:{
-        thrust:0, 
-        pitch:0, 
-        yaw:0,
-        roll:0
-    },
-    forces:{
-        yaw:0.0001,
-        thrust: 0.0002, 
-        pitch:0.0001, 
-        roll:0.0001
-    },
-    damping:{
-        yaw:0.97,
-        thrust: 0.998, 
-        pitch:0.95, 
-        roll:0.95
-    }
-};
-var g_audioLevel=1.0;
-
 var g_thrustDefault=0.0;
 
 var g_controlRanges = {
@@ -110,9 +72,10 @@ var g_controlRanges = {
     yaw:[-0.03,0.03],
     roll:[-0.03,0.03]
     };
+    
 var g_controlInputs = {
     thrust:0, 
-    pitch:0, 
+    pitch:0,
     yaw:0,
     roll:0
 };
@@ -139,10 +102,37 @@ var g_controlDamping = {
 };
 
 var g_buttons = 0;
-var g_viewRotation = [0, 0, 0];
 var g_joyAxis = [0, 0, 0];
 
+function newControls(){
+    return {
+        dirty:false,
+        joyAxis:[0,0,0],
+        inputs:{
+            thrust:0, 
+            pitch:0, 
+            yaw:0,
+            roll:0
+        },
+        active:{
+            thrust: [false,false],
+            yaw: [false,false],
+            pitch: [false,false],
+            roll: [false,false]
+        },
+        flipOver:g_controlFlipover,
+        defaults:g_nullControlInputs,
+        ranges:g_controlRanges,
+        forces:g_controlForces,
+        damping:g_controlDamping
+    }
+}
 
+var g_controls=newControls();
+
+
+
+var g_viewRotation = [0, 0, 0];
 var cam3rdPerson=0;
 var camFreeFly=1;
 var camFollowPath=2;
@@ -163,7 +153,7 @@ var maxTx=1;
 var maxTy=1;
 
 var g_terrainVertexRemap=[0,2,1]
-var g_terrainVertexScale=vec3f(-360,30,360)
+var g_terrainVertexScale=vec3f(-60,30,60)
 var g_terrainVertexTranslation=vec3f(0,0,0)
 
 

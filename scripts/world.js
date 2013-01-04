@@ -392,6 +392,83 @@ function getTransformProperty(element) {
     return false;
 }
 
+var badPacketCount=0;
+
+function sendFixtureToServer(fix){
+    var msg='sync~'+fix.id;
+    for(var bid in fix.bodies){
+        var bod=fix.bodies[bid];
+        msg+='~'+bod.position[0]+'~'+bod.position[1]+'~'+bod.position[2]+
+             '~'+bod.linearVelocity[0]+'~'+bod.linearVelocity[1]+'~'+bod.linearVelocity[2];
+    }
+    sendToServer(msg);
+}
+
+function sendControlsToServer(fix){
+    var msg='ctrl~'+fix.id;
+    var controls=fix.controls;
+    for(var i in controls.inputs)
+        msg+='~'+controls.inputs[i];
+    for(var ca in controls.active)
+        for(var a in controls.active[ca])
+            msg+='~'+controls.active[ca][a];
+    msg+='~'+controls.flipOver;
+    sendToServer(msg);
+}
+
+function parseBool(str) {
+  return /^y|yes|ok|true$/i.test(str);
+}
+
+function recvFromServer(msg){
+    var cmd=msg.split('~');
+    var idx=0;
+    while(idx<cmd.length){
+        var remaining=cmd.length-idx;
+        var c=cmd[idx];
+        if(c=='sync'){
+            var objID=cmd[++idx];
+            idx++;
+            var fix=fixtures[objID];
+            if(remaining<(fix.bodies.length*6)+2){//cmd + objID + 16 flt
+                badPacketCount++;
+                break;
+            }
+            try{
+                for(var bid in fix.bodies){
+                    var bod=fix.bodies[bid];
+                    v3set(bod.position,parseFloat(cmd[idx++]),parseFloat(cmd[idx++]),parseFloat(cmd[idx++]));
+                    v3set(bod.linearVelocity,parseFloat(cmd[idx++]),parseFloat(cmd[idx++]),parseFloat(cmd[idx++]));
+                }
+            }catch(e){
+                badPacketCount++;
+                break;
+            }
+        }else if(c=='ctrl'){
+            var objID=cmd[++idx];
+            idx++;
+            var fix=fixtures[objID];
+            if(remaining<15){//cmd + objID + 16 flt
+                badPacketCount++;
+                break;
+            }
+            var controls=fix.controls;
+            for(var i in controls.inputs){
+                controls.inputs[i]=parseFloat(cmd[idx++]);
+            }
+            
+            for(ci in controls.active){
+                for(i in controls.active[ci]){
+                    controls.active[ci][i]=parseBool(cmd[idx++]);
+                }
+            }
+            controls.flipOver=parseBool(cmd[idx++]);
+        }
+        if(idx==cmd.length)
+            break;
+    }
+}
+
 var then = 0.0;
 var clock = 0.0;
 var fpsElem = document.getElementById("fps");
@@ -495,21 +572,11 @@ function initialize() {
     
     document.onkeydown = function (e) {
         
-        if (updateControlKeys(e.keyCode, true)) {
+        if (updateAppKeys(e.keyCode, true)==true){
+            //Got app key
+        }
+        else if (updateControlKeys(e.keyCode, true)) {
         //Got flight key
-        } else if (e.keyCode == KEY.P) {
-            console.log("pause hit");
-            g_paused = !g_paused;
-            setPaused(g_paused);
-
-
-        } else if (e.keyCode == KEY.X) {
-            console.log("constraint hit");
-            g_enableConstraints = !g_enableConstraints;
-        }else if(e.keyCode == KEY.Q){
-            g_camMode = (g_camMode + 1) % 3;
-        }else if(e.keyCode == KEY.SPACEBAR){
-            interactFixture();
         }
     }
 
@@ -552,8 +619,10 @@ function initialize() {
             g_viewRotation[0] += g_dragDelta.y *  0.01;
             g_viewRotation[1] += g_dragDelta.x * -0.01;
         }else{
-            g_joyAxis[0]=(g_dragEnd.x/gl.canvas.width)-0.5;
-            g_joyAxis[1]=(g_dragEnd.y/gl.canvas.height)-0.5;
+            if(g_targetFixture&&g_targetFixture!=null){
+                g_targetFixture.controls.joyAxis[0]=(g_dragEnd.x/gl.canvas.width)-0.5;
+                g_targetFixture.controls.joyAxis[1]=(g_dragEnd.y/gl.canvas.height)-0.5;
+            }
         }
 
     }
@@ -598,35 +667,64 @@ function wheel(event) {
 }
 window.onmousewheel = document.onmousewheel = wheel;
 
-function updateControlKeys(keyCode, state) {
-    if (keyCode == KEY.W){
-        g_controlsActive.thrust[0] = state;
-		
-    }
-    else if (keyCode == KEY.E){
-        if(state)selectNextCamTarget();
-    }
+function updateAppKeys(keyCode, state) {
+    if(state==false)return false;
+    //Just Pressed
+    if (keyCode == KEY.E){if(state)selectNextCamTarget();}
     else if (keyCode == KEY.O)audio.play("helo",1.0,null,null);
-    else if (keyCode == KEY.S) g_controlsActive.thrust[1] = state;
-    else if (keyCode == KEY.A) g_controlsActive.yaw[0] = state;
-    else if (keyCode == KEY.D) g_controlsActive.yaw[1] = state;
-    else if (keyCode == KEY.ARROW_UP) g_controlsActive.pitch[0] = state;
-    else if (keyCode == KEY.ARROW_DOWN) g_controlsActive.pitch[1] = state;
-    else if (keyCode == KEY.ARROW_LEFT) g_controlsActive.roll[0] = state;
-    else if (keyCode == KEY.ARROW_RIGHT) g_controlsActive.roll[1] = state;
-    else if (keyCode == KEY.R) g_controlFlipover = state;
     else if (keyCode == KEY.H){
-        if(state){
-            if(g_showHelp==true)
-                g_showHelp=false;
-            else
-                g_showHelp=true;
-            setElementVisibility('helpText',g_showHelp);
+        if(g_showHelp==true)g_showHelp=false; else g_showHelp=true;
+        setElementVisibility('helpText',g_showHelp);
+    }else if (keyCode == KEY.P) {
+        console.log("pause hit");
+        g_paused = !g_paused;
+        setPaused(g_paused);
+    }else   if (keyCode == KEY.G){
+        g_graphicsQuality=(g_graphicsQuality+1)%3;
+    }else if (keyCode == KEY.X) {
+        console.log("constraint hit");
+        g_enableConstraints = !g_enableConstraints;
+    }else if(keyCode == KEY.Q){
+        g_camMode = (g_camMode + 1) % 3;
+    }else if(keyCode == KEY.SPACEBAR){
+        interactFixture();
+    }else if(keyCode == KEY.M){
+        if(//(g_frameCount%100)==0 &&
+            (g_targetFixture&&g_targetFixture!=null)){
+            sendFixtureToServer(g_targetFixture);
         }
-    }else if (keyCode == KEY.G){
-        if(state)g_graphicsQuality=(g_graphicsQuality+1)%3;
+    }else
+        return false;
+    return true;
+}
+
+var g_keyWasDown={};
+
+function updateControlKeys(keyCode, state) {
+    if(state==true){
+        var wasdown=g_keyWasDown[keyCode];
+        if((wasdown==undefined)||(wasdown==false))g_keyWasDown[keyCode]=true;
+        else
+            return; //Debounce
+    }else{
+        g_keyWasDown[keyCode]=false;
     }
+    if(g_targetFixture==undefined||g_targetFixture==null||g_camMode!=cam3rdPerson)
+        return false;
+    var controls=g_targetFixture.controls;
+    if (keyCode == KEY.W){     controls.active.thrust[0] = state;}
+    else if (keyCode == KEY.S) controls.active.thrust[1] = state;
+    else if (keyCode == KEY.A) controls.active.yaw[0] = state;
+    else if (keyCode == KEY.D) controls.active.yaw[1] = state;
+    else if (keyCode == KEY.ARROW_UP) controls.active.pitch[0] = state;
+    else if (keyCode == KEY.ARROW_DOWN) controls.active.pitch[1] = state;
+    else if (keyCode == KEY.ARROW_LEFT) controls.active.roll[0] = state;
+    else if (keyCode == KEY.ARROW_RIGHT) controls.active.roll[1] = state;
+    else if (keyCode == KEY.R) controls.flipOver = state;
     else return false;
+
+    sendControlsToServer(g_targetFixture);
+    
     return true;
 }
 
@@ -701,53 +799,49 @@ function projectBodyVelocity(body,normal,namt){
     }
 }
 
-	
-function updateControls(){
+function updateControls(fix){
     var i;
-    for(i in g_controlsActive){
-        if(g_controlsActive[i][0])g_controlInputs[i]+=g_controlForces[i];
-        if(g_controlsActive[i][1])g_controlInputs[i]-=g_controlForces[i];
+    var controls=fix.controls;
+    for(i in controls.active){
+        var cai=controls.active[i];
+        if(cai[0]||cai[1]){
+            if(cai[0])
+                controls.inputs[i]+=controls.forces[i];
+            if(cai[1])
+                controls.inputs[i]-=controls.forces[i];
+        }else{
+            controls.inputs[i] *= controls.damping[i];
+        }
     }
-		
+   
     if(g_buttons==1){
-        if(Math.abs(g_joyAxis[0])>0.2){
-            g_controlInputs.roll+=g_joyAxis[0]*g_controlForces.roll*-2.0;
-            g_controlInputs.yaw+=g_joyAxis[0]*g_controlForces.yaw*-1.0;
+        if(Math.abs(controls.joyAxis[0])>0.2){
+            controls.inputs.roll+=controls.joyAxis[0]*controls.forces.roll*-2.0;
+            controls.inputs.yaw+=controls.joyAxis[0]*controls.forces.yaw*-1.0;
         }	
-        if(Math.abs(g_joyAxis[1])>0.2){
-            g_controlInputs.pitch+=g_joyAxis[1]*g_controlForces.pitch*-2.0;
+        if(Math.abs(controls.joyAxis[1])>0.2){
+            controls.inputs.pitch+=controls.joyAxis[1]*controls.forces.pitch*-2.0;
         }
-    //g_controlInputs.thrust+=g_controlForces.thrust;
+    //controls.inputs.thrust+=controls.forces.thrust;
     }
-		
-    for(i in g_controlInputs){
-        if(g_controlInputs[i]<g_controlRanges[i][0])
-            g_controlInputs[i]=g_controlRanges[i][0];
-        else if(g_controlInputs[i]>g_controlRanges[i][1])
-            g_controlInputs[i]=g_controlRanges[i][1];
-        g_controlInputs[i] *= g_controlDamping[i];
+    	
+    for(i in controls.inputs){
+        if(controls.inputs[i]<controls.ranges[i][0])
+            controls.inputs[i]=controls.ranges[i][0];
+        else if(controls.inputs[i]>controls.ranges[i][1])
+            controls.inputs[i]=controls.ranges[i][1];
     }
-		
+    if(controls.inputs.thrust<controls.defaults.thrust){
+        controls.inputs.thrust+=controls.forces.thrust*0.5;
+    }
+    rotorSpins[0] += (controls.inputs.thrust*5.0); //Math.sin(clock)*0.1;
+
+}
+
+function updateAvatarControls(fix){
     if (g_camMode == camFreeFly) {
-        v3addv(g_eyePosition, g_eyePosition, v3mul(lookVector, g_controlInputs.thrust*3.0));
-    }else{
-        if(g_controlInputs.thrust<g_thrustDefault){
-            g_controlInputs.thrust+=g_controlForces.thrust*0.5;
-        }
-        rotorSpins[0] += (g_controlInputs.thrust*5.0); //Math.sin(clock)*0.1;
+        v3addv(g_eyePosition, g_eyePosition, v3mul(lookVector, fix.controls.inputs.thrust*3.0));
     }
-}
-
-function getControlInputs(fixture){
-    if(g_targetFixture==fixture)
-        return g_controlInputs;
-    return g_nullControlInputs;
-}
-
-function getControlsActive(fixture){
-    if(g_targetFixture==fixture)
-        return g_controlsActive;
-    return g_nullControlsActive;
 }
 
 function chopperTrackTarget(fi){
@@ -1237,7 +1331,8 @@ function gameLoop() { //17H X7Y2
     //if (!g_paused)
     {
         while(clock<nextTime && steps<maxSteps){
-            updateControls();
+            if(g_targetFixture&&g_targetFixture!=null)
+                updateAvatarControls(g_targetFixture.controls);
             if (!g_paused)
                 updateSim();
             updateCamera();
@@ -1268,4 +1363,8 @@ function gameLoop() { //17H X7Y2
         
     }
     render();
+
+    if((g_frameCount%100)==0 && (g_targetFixture && g_targetFixture!=null)){
+        sendFixtureToServer(g_targetFixture);
+    }
 }

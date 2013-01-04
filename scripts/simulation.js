@@ -497,6 +497,7 @@ function addDistanceConstraint(ba, bb,aphasic) {
 
 function newFixture(bodies,update) {
     var fixture = {
+        controls: newControls(),
         bodies: bodies,
         matrix: new Float32Array(16),
         update: update,
@@ -774,6 +775,7 @@ function updateSim() {
     for (var i = 0; i < fixtures.length; i++) {
         var fix = fixtures[i];
         fix.update();
+        updateControls(fix);
     }
     phaseFrame++;
 }

@@ -28,8 +28,7 @@ function updateCarFixture() {
     var tmp = v3t5;
     var at = v3t6;
     var imp = v3t7;
-    var controlInputs=getControlInputs(this);
-    var controlsActive=getControlsActive(this);
+    var controls=this.controls;
     var blwheel=fi.bodies[0];
     var brwheel=fi.bodies[1];
     var flwheel=fi.bodies[2];
@@ -47,13 +46,13 @@ function updateCarFixture() {
     //Apply steering impulse
     v3copy(tmp,right);
     if(flwheel.colliding && frwheel.colliding){
-        if(controlsActive.yaw[0]){
-            v3mulv(tmp,fwd,controlsActive.yaw[0]*-1.0);
+        if(controls.active.yaw[0]){
+            v3mulv(tmp,fwd,controls.active.yaw[0]*-1.0);
             v3addv(tmp,tmp,right); 
         }
         else
-        if(controlsActive.yaw[1]){
-            v3mulv(tmp,fwd,controlsActive.yaw[1]*-1.0);
+        if(controls.active.yaw[1]){
+            v3mulv(tmp,fwd,controls.active.yaw[1]*-1.0);
             v3subv(tmp,tmp,right);
         }
         v3normalizev(tmp,tmp);
@@ -68,7 +67,7 @@ function updateCarFixture() {
     }
     //end steering impulse
     
-    v3mulv(imp,fwd,controlInputs.thrust*0.1);
+    v3mulv(imp,fwd,controls.inputs.thrust*0.1);
     v3addv(flwheel.linearVelocity,flwheel.linearVelocity, imp);
     v3addv(frwheel.linearVelocity,frwheel.linearVelocity, imp);
     v3addv(blwheel.linearVelocity,blwheel.linearVelocity, imp);
@@ -100,8 +99,6 @@ function updateBoatFixture() {
     var tmp = v3t5;
     var at = v3t6;
     var imp = v3t7;
-    var controlInputs=getControlInputs(this);
-    var controlsActive=getControlsActive(this);
     var blwheel=fi.bodies[0];
     var brwheel=fi.bodies[1];
     var flwheel=fi.bodies[2];
@@ -115,13 +112,14 @@ function updateBoatFixture() {
     
     //Apply steering impulse
     v3copy(tmp,right);
+    var controls=fi.controls;
     if(flwheel.inWater && frwheel.inWater){
-        if(controlsActive.yaw[0]){
-            v3mulv(tmp,fwd,controlsActive.yaw[0]*-1.0);
+        if(controls.active.yaw[0]){
+            v3mulv(tmp,fwd,controls.active.yaw[0]*-1.0);
             v3addv(tmp,tmp,right); 
         }else 
-        if(controlsActive.yaw[1]){
-            v3mulv(tmp,fwd,controlsActive.yaw[1]*-1.0);
+        if(controls.active.yaw[1]){
+            v3mulv(tmp,fwd,controls.active.yaw[1]*-1.0);
             v3subv(tmp,tmp,right);
         }
         v3normalizev(tmp,tmp);
@@ -136,7 +134,7 @@ function updateBoatFixture() {
     }
     //end steering impulse
     
-    v3mulv(imp,fwd,controlInputs.thrust*0.1);
+    v3mulv(imp,fwd,controls.inputs.thrust*0.1);
     v3addv(flwheel.linearVelocity,flwheel.linearVelocity, imp);
     v3addv(frwheel.linearVelocity,frwheel.linearVelocity, imp);
     v3addv(blwheel.linearVelocity,blwheel.linearVelocity, imp);
@@ -170,8 +168,6 @@ function updatePlaneFixture() {
     var imp = v3t7;
     var cvel = v3t8;
     
-    var controlInputs=getControlInputs(this);
-    var controlsActive=getControlsActive(this);
     v3set(up,0.0,0.0,0.0);
     v3set(centroid,0.0,0.0,0.0);
     v3subv(right, fi.bodies[1].position0, fi.bodies[0].position0);
@@ -208,30 +204,32 @@ function updatePlaneFixture() {
     var flwheel=fi.bodies[0];
     var brwheel=fi.bodies[3];
     var blwheel=fi.bodies[2];
-        if(controlsActive.yaw[0]){
-            v3mulv(tmp,fwd,controlsActive.yaw[0]*-1.0);
+    var controls=fi.controls;
+        //Yaw force
+        if(controls.active.yaw[0]){
+            v3mulv(tmp,fwd,controls.active.yaw[0]*-1.0);
             v3addv(tmp,tmp,right);
 
             v3normalizev(tmp,tmp);
         }
         else
-        if(controlsActive.yaw[1]){
-            v3mulv(tmp,fwd,controlsActive.yaw[1]*-1.0);
+        if(controls.active.yaw[1]){
+            v3mulv(tmp,fwd,controls.active.yaw[1]*-1.0);
             v3subv(tmp,tmp,right);
             v3normalizev(tmp,tmp);
         }else{
             v3copy(tmp,right);
-        
+
         }
-    
+
     //Roll force
-        v3mulv(tmp,up,controlInputs.roll*1.1);
+        v3mulv(tmp,up,controls.inputs.roll*1.1);
         v3addv(frwheel.linearVelocity,frwheel.linearVelocity,tmp);
         v3mulv(tmp,tmp,-1.0);
         v3addv(flwheel.linearVelocity,flwheel.linearVelocity,tmp);
    
     //Pitch force
-        v3mulv(tmp,up,controlInputs.pitch*1.1);
+        v3mulv(tmp,up,controls.inputs.pitch*1.1);
         v3addv(brwheel.linearVelocity,brwheel.linearVelocity,tmp);
         //v3mulv(tmp,tmp,-1.0);
         v3addv(blwheel.linearVelocity,blwheel.linearVelocity,tmp);
@@ -243,7 +241,7 @@ function updatePlaneFixture() {
     for(i=0;i<fi.bodies.length;i++)
         v3addv(cvel,cvel, fi.bodies[i].linearVelocity);
     var cdot=v3dot(fwd,cvel);
-    var thrust=controlInputs.thrust*0.2;
+    var thrust=controls.inputs.thrust*0.2;
     v3mulv(imp,fwd,thrust);
     cdot*=1.0/5.0;
     cdot*=10.12; //INcrease this for shorter takeoffs
@@ -268,8 +266,8 @@ drag*=0.999;
         projectBodyVelocity(fi.bodies[i],up,amt);
         projectBodyVelocity(fi.bodies[i],right,amt);
     }
-    var pitch=controlInputs.pitch*0.2;
-    var yaw=controlInputs.yaw*0.2;
+    var pitch=controls.inputs.pitch*0.2;
+    var yaw=controls.inputs.yaw*0.2;
     v3mulv(tmp,up,(1.0-pitch));
     v3addv(tmp,tmp,v3mulv(tmp,fwd,pitch));
     v3mulv(imp,right,(1.0-yaw));
@@ -296,7 +294,6 @@ function updateRalienFixture() {
     var right = v3t4;
     var tmp = v3t5;
     var at = v3t6;
-    var controlsActive=getControlsActive(this);
     v3subv(up, fi.bodies[1].position0, fi.bodies[0].position0);
     right[0]=up[1];
     right[1]=up[2];
@@ -307,7 +304,7 @@ function updateRalienFixture() {
     fast.matrix4.cameraLookAt(fi.matrix, centroid, at, up);
     
     
-    
+    var controls=fi.controls;
     
     fi.bodies[1].linearVelocity = v3subv(fi.bodies[1].linearVelocity,fi.bodies[1].linearVelocity, v3mulv(tmp,gravity,1.1));
     if(!fi.animCountdown){
@@ -315,21 +312,21 @@ function updateRalienFixture() {
         var b0=fi.bodies[0];
         var b1=fi.bodies[1];
         
-        if(controlsActive.thrust[0]){
-            v3addv(b0.linearVelocity,b0.linearVelocity,v3mulv(v3t0,fwd,controlsActive.thrust[0]*0.004));
-            //b0.linearVelocity[0]+=controlsActive.thrust[0]*0.001;
+        if(controls.active.thrust[0]){
+            v3addv(b0.linearVelocity,b0.linearVelocity,v3mulv(v3t0,fwd,controls.active.thrust[0]*0.004));
+            //b0.linearVelocity[0]+=controls.active.thrust[0]*0.001;
         }
-        if(controlsActive.thrust[1]){
-            v3subv(b0.linearVelocity,b0.linearVelocity,v3mulv(v3t0,fwd,controlsActive.thrust[1]*0.004));
-            //b0.linearVelocity[0]-=controlsActive.thrust[1]*0.001;
+        if(controls.active.thrust[1]){
+            v3subv(b0.linearVelocity,b0.linearVelocity,v3mulv(v3t0,fwd,controls.active.thrust[1]*0.004));
+            //b0.linearVelocity[0]-=controls.active.thrust[1]*0.001;
         }
-        if(controlsActive.yaw[0]){
-            v3addv(b0.linearVelocity,b0.linearVelocity,v3mulv(v3t0,right,controlsActive.yaw[0]*0.004));
-            //b0.linearVelocity[2]+=controlsActive.yaw[0]*0.001;
+        if(controls.active.yaw[0]){
+            v3addv(b0.linearVelocity,b0.linearVelocity,v3mulv(v3t0,right,controls.active.yaw[0]*0.004));
+            //b0.linearVelocity[2]+=controls.active.yaw[0]*0.001;
         }
-        if(controlsActive.yaw[1]){
-            v3subv(b0.linearVelocity,b0.linearVelocity,v3mulv(v3t0,right,controlsActive.yaw[1]*0.004));
-            //b0.linearVelocity[2]-=controlsActive.yaw[1]*0.001;
+        if(controls.active.yaw[1]){
+            v3subv(b0.linearVelocity,b0.linearVelocity,v3mulv(v3t0,right,controls.active.yaw[1]*0.004));
+            //b0.linearVelocity[2]-=controls.active.yaw[1]*0.001;
         }
     //if(fi.emitter==undefined)
     //	fi.emitter=audio.addEmitter(fi,fi.bodies[0].position);
@@ -385,24 +382,23 @@ function updateChopperFixture() {
 
     fast.matrix4.cameraLookAt(fi.matrix, centroid, at, v3mulv(tmp2,right,-1.0));
     
-    var controlInputs=getControlInputs(this);
-    
+    var controls=fi.controls;
+   
     var vl = fi.bodies[3].linearVelocity; //Top ball
-    v3addv(vl, vl, v3mulv(tmp, up, controlInputs.thrust * 0.85));	//Rotor Thrust
-    v3addv(vl, vl, v3mulv(tmp, [0, 1, 0], controlInputs.thrust * 0.15)); //Rotor vertical balance thrust
-
-    if(g_controlFlipover){
+    v3addv(vl, vl, v3mulv(tmp, up, controls.inputs.thrust * 0.85));	//Rotor Thrust
+    v3addv(vl, vl, v3mulv(tmp, [0, 1, 0], controls.inputs.thrust * 0.15)); //Rotor vertical balance thrust
+    if(controls.flipOver){
         v3subv(vl,vl, v3mulv(tmp,gravity,3.1));
         v3subv(vl,vl, v3mulv(tmp,right,0.001));
     //	v3addv(vl, vl, v3mulv(tmp, [0, 1, 0], 0.15)); //Rotor vertical balance thrust
     }
 		
-    v3addv(vl, vl, v3mulv(tmp, tmp2, controlInputs.roll));	//RollImpulse
+    v3addv(vl, vl, v3mulv(tmp, tmp2, controls.inputs.roll));	//RollImpulse
 		
     vl = fi.bodies[0].linearVelocity; //Rear ballw
     //v3addv(vl,vl,v3mulv(tmp,up,v3dot(vl,up)*-0.001));		//Damp tail u-d sphere tangential velocity
-    v3addv(vl, vl, v3mulv(tmp, right, controlInputs.yaw));    //Yaw
-    v3addv(vl, vl, v3mulv(tmp, up, controlInputs.pitch));	//Pitch as a function of fwd velocity
+    v3addv(vl, vl, v3mulv(tmp, right, controls.inputs.yaw));    //Yaw
+    v3addv(vl, vl, v3mulv(tmp, up, controls.inputs.pitch));	//Pitch as a function of fwd velocity
 		
     if(fi.bodies[3].position[1]>200.0){
         for(var i=0;i<4;i++){	//Damp vertical velocity if above hard deck
@@ -423,12 +419,13 @@ function updateChopperFixture() {
     }else{
 //        chopperTrackTarget(fi);
     }
-    var abt=Math.abs(controlInputs.thrust);
+    var controls=fi.controls;
+    var abt=Math.abs(controls.inputs.thrust);
     if(abt>0.01){
         if(fi.engineSound.active==false)
-            fi.engineSound.emit("helo",controlInputs.thrust/g_controlRanges.thrust[1],true,20.0);
+            fi.engineSound.emit("helo",fi.controls.inputs.thrust/fi.controls.ranges.thrust[1],true,20.0);
         else
-            fi.engineSound.volume=controlInputs.thrust/g_controlRanges.thrust[1];
+            fi.engineSound.volume=fi.controls.inputs.thrust/fi.controls.ranges.thrust[1];
     }else{
         if(fi.engineSound.active==true)
             fi.engineSound.stop();

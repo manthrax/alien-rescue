@@ -1,22 +1,40 @@
-var connect = require('connect');
-connect.createServer(
-    connect.static(__dirname)
-).listen((process.env.PORT || 3000));
+var express = require('express'),
+    sio = require('socket.io'),
+	http = require('http');
 
-var fs = require('fs')
-    , http = require('http')
-    , socketio = require('socket.io');
+var app = express();
 
-var chatServer = http.createServer(function(req, res) {
-    res.writeHead(200, { 'Content-type': 'text/html'});
-    res.end(fs.readFileSync(__dirname + '/index.html'));
-}).listen((process.env.PORT || 3000)+1, function() {
-    console.log('Listening at: http://localhost:'+((process.env.PORT || 3000)+1));
+var httpServer = http.createServer(app);
+
+app.use(express.static(__dirname));
+/*
+app.get('/', function(req, res){
+  res.send('<script src="/socket.io/socket.io.js"></script>\
+<script>\
+  var socket = io.connect("http://localhost:3000");\
+  socket.on("news", function (data) {\
+    alert(data.hello);\
+  });\
+</script>');
 });
-var sockman = socketio.listen(chatServer).on('connection', function (socket) {
-     socket.on('message', function (msg) {
-        //console.log('Message Received: ', msg);
+*/
+
+httpServer.listen(3000);
+
+var io = sio.listen(httpServer);
+
+//io.sockets.on('connection', function (socket) {
+//  socket.emit('news', { hello: 'world' });
+//});
+io.sockets.on('message', function (msg) {
+	//console.log('Message Received: ', msg);
+	socket.broadcast.emit('message', msg);
+});
+
+io.sockets.on('connection', function (socket) {
+    console.log('Connect Received: ');
+    socket.on('message', function (msg) {
+        console.log('Message Received: ', msg);
         socket.broadcast.emit('message', msg);
     });
 });
-sockman.set('log level',1);

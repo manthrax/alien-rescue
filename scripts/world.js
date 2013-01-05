@@ -1368,3 +1368,36 @@ function gameLoop() { //17H X7Y2
         sendFixtureToServer(g_targetFixture);
     }
 }
+
+var iosocket;
+
+function sendToServer(msg){
+    iosocket.send(msg);
+}
+
+function connectToChatServer()
+{
+    var incomingChatElem=document.getElementById('incomingChatMessages');
+    var outgoingChatElem=document.getElementById('outgoingChatMessage');
+    iosocket = io.connect("/");//:3001");
+    iosocket.on('connect', function () {
+        incomingChatElem.innerHTML+='<li>Connected</li>';
+        iosocket.on('message', function(message) {
+            if(message.indexOf("chat~")==0){
+                incomingChatElem.innerHTML+='<li>'+message+'</li>';
+            }else{
+                recvFromServer(message);
+            }
+        });
+        iosocket.on('disconnect', function() {incomingChatElem.innerHTML+='<li>Disconnected</li>';});
+    });
+    outgoingChatElem.onkeypress=function(event) {
+        if(event.which == 13) {
+            event.preventDefault();
+            iosocket.send('chat~'+outgoingChatElem.value);
+            incomingChatElem.innerHTML+='<li>'+outgoingChatElem.value+'</li>';
+            outgoingChatElem.value='';
+            outgoingChatElem.blur();
+        }
+    };
+};

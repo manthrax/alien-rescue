@@ -188,6 +188,7 @@ function setupSkybox() {
 }
 
 var	depthShader=null;
+
 function getDepthShader(){
     if(!depthShader){
         depthShader={
@@ -251,7 +252,7 @@ function v3struct(v){
         };
 }
 
-var g_settingsVersion=15;
+var g_settingsVersion=16;
 
 function worldClosed(){
     var state=JSON.stringify({
@@ -488,7 +489,8 @@ function initialize() {
     g_hudTransformProperty = getTransformProperty(g_fpsDiv);
     g_fpsTimer = new tdl.fps.FPSTimer();
     gl = tdl.webgl.setupWebGL(canvas);
-	
+
+    g_videoElement = document.getElementById("video");
     g_videoElement = document.getElementById("video");
     //g_videoElement.addEventListener("canplaythrough", startVideo, true);
     //g_videoElement.play();
@@ -515,8 +517,8 @@ function initialize() {
     //g_videoElement.addEventListener("ended", videoDone, true);
 
     skybox = setupSkybox();
-	
-    setInterval(updateVideoTexture, 15);
+
+    setInterval(updateVideoTexture, 66);//66=15 fps.. 33=30fps 16=60fps
 	
 
     Log("--Setup Terrain---------------------------------------");
@@ -1019,7 +1021,7 @@ function renderDeferred(srcDiffuse){
 
 function renderForward(){
 
-    Log("--Draw terrain---------------------------------------");
+    //Log("--Draw terrain---------------------------------------");
     if(g_renderPass != passLightDepth){
         drawPrep(skybox,skyConst);
         lightColor = skyPer.lightColor;
@@ -1332,7 +1334,7 @@ function gameLoop() { //17H X7Y2
     {
         while(clock<nextTime && steps<maxSteps){
             if(g_targetFixture&&g_targetFixture!=null)
-                updateAvatarControls(g_targetFixture.controls);
+                updateAvatarControls(g_targetFixture);
             if (!g_paused)
                 updateSim();
             updateCamera();
@@ -1382,7 +1384,12 @@ function connectToChatServer()
     iosocket = io.connect("/");//:3001");
     iosocket.on('connect', function () {
         incomingChatElem.innerHTML+='<li>Connected</li>';
+        iosocket.on('data', videoStreamHandler);
         iosocket.on('message', function(message) {
+            if(message.indexOf("data")==0){
+                //alert("Got data!"); 
+                console.log("Got data messgae!");
+            }else
             if(message.indexOf("chat~")==0){
                 incomingChatElem.innerHTML+='<li>'+message+'</li>';
             }else{

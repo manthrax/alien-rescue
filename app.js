@@ -12,13 +12,19 @@ var io = sio.listen(httpServer);
 
 io.set('log level',0);
 
-io.sockets.on('message', function (msg) {
+//io.sockets.on('message', function (msg) {
 	//console.log('Message Received: ', msg);
-	socket.broadcast.emit('message', msg);
-});
+//    socket.broadcast.emit('message', msg);
+//});
 
 io.sockets.on('connection', function (socket) {
+    var address = socket.handshake.address;
+    console.log("New connection from " + address.address + ":" + address.port);
     //console.log('Connect Received: ');
+	socket.on('data', function (data) {
+	//console.log('Got data');
+        socket.broadcast.emit('data', data);
+    });
     socket.on('message', function (msg) {
         //console.log('Message Received: ', msg);
         socket.broadcast.emit('message', msg);

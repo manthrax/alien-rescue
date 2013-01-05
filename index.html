@@ -103,17 +103,18 @@
 
 <!--div id="info"><a href="http://threedlibrary.googlecode.com" target="_blank">tdl.js</a> - example</div-->
 
-
-<video id="video" autoplay loop style="display:none">
+<video id="video" autoplay controls style="display:none" width="512" height="512">
  <source src="assets/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'> 
- controls="controls">
-your browser does not support the video tag
+<!--video id="video" autoplay loop style="display:none" controls="controls">
+your browser does not support the video tag--> 
 </video>
+
 <div id="viewContainer">
 
     <div class="uiElem" id="fpsContainer">
       <div class="fps"><span id="fps"></span></div>
     </div>
+    
 
     <div class="uiElem" id="helpText" style="top: 40px; left: 10px;">
       <div class="help">
@@ -168,6 +169,16 @@ your browser does not support the video tag
             debug text
         </a>
       <!--text class='uiElem' id='scriptText'>script text</text-->
+
+        <!-- VIDEO STREAMING -->
+ 	<div class="uiElem" id="userVideo" style="top: 40px; left: 10px; ">
+	<h1><video autoplay id="sourcevid" width="512" height="512"></video></h1>
+        <img src="" id="frame" style="width:128px;height:128px"/>
+	<canvas id="output"></canvas>
+	<div id="log"></div>
+	</div>
+	<script type="text/javascript" src="scripts/video.js"></script>
+
     </div>
     <div class="uiTitle" id="titleDiv" style="top: 40px; left: 10px;">
         <img src="assets/title0001.png"/>

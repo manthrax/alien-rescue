@@ -10,6 +10,7 @@ var waterObject;
 var ralienModel;
 var skybox;
 var g_videoElement;
+var g_localCamCanvas;
 
 var skyboxTextures = ['assets/neg_x.png', 'assets/pos_x.png', 'assets/pos_y.png', 'assets/neg_y.png', 'assets/neg_z.png', 'assets/pos_z.png'];
 
@@ -262,7 +263,7 @@ var	billboardDef={
 	},
 	material:{
 		textures:{
-			diffuseSampler: 'assets/billboard.png',
+			diffuseSampler: 'assets/billboard1024.png',
 			detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
 			cubeSampler: skyboxTextures
 		}
@@ -303,7 +304,7 @@ var	fsQuadDef={
 	},
 	material:{
 		textures:{
-			diffuseSampler: 'assets/billboard.png',
+			diffuseSampler: 'assets/billboard1024.png',
 			depthSampler: 'assets/MaPZone[Planet_01_diffuse].png',
 			shadowSampler: 'assets/sandrail.png'
 		}

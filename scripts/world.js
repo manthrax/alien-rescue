@@ -284,6 +284,7 @@ function loadSettings(){
     g_renderDebugBodies=false;
     g_paused=false;
     g_showHelp=true;
+    g_audioLevel=0;
     if(localStorage['appRunning']&&localStorage['appRunning']==true){
         alert("App already ruunning!");
     }else{
@@ -326,9 +327,65 @@ function setHelpActivation(helpActive){
     if(helpActive==false)
         canvas.focus();
 }
+/*
+var mouseDown=false,
+    posX   = 0,
+    posY   = 0,
+    innerX = 0,
+    innerY = 0;
 
+$("#playerList").on("mousedown",function(e){
+    innerX = e.pageX - $(this).offset().left;
+    innerY = e.pageY - $(this).offset().top;
+    mouseDown= true;
+}).on("mouseup",function(){
+    mouseDown=false;
+});
+
+$(document).on("mousemove",function(e){    
+    if (mouseDown){
+        var m = {  x: e.pageX-innerX,  y: e.pageY-innerY };        
+        $('#playerList').css({ left: m.x, top: m.y });       
+    }
+});
+*/
+
+function makeDraggableElement(targElem){
+    targElem.onmousedown=function(evt){
+        evt.target.dragOrg={x:evt.pageX-evt.target.offsetLeft,y:evt.pageY-evt.target.offsetTop};
+        evt.target.beingDragged=true;
+        //console.log("start");
+    }
+    targElem.onmousemove=function(evt){
+        if(evt.target.beingDragged){
+            evt.target.style.left=(evt.pageX-evt.target.dragOrg.x);
+            evt.target.style.top=(evt.pageY-evt.target.dragOrg.y);
+            //console.log("drag:"+(evt.x-evt.target.dragOrg.x));
+        }
+    }
+    targElem.onmouseout=function(evt){
+        //console.log("stop");
+    //    evt.target.style.left=(evt.pageX-evt.target.dragOrg.x);
+     //   evt.target.style.top=(evt.pageY-evt.target.dragOrg.y);
+        evt.target.beingDragged=false;
+    }
+    targElem.onmouseup=function(evt){
+        evt.target.beingDragged=false;
+        //evt.target.removeEventListener('mousemove', evt.target.onmousemove);
+        //console.log("stop");
+    }
+    
+}
 function synchronizeSettingsUI(){
     console.log("sync");
+    
+    makeDraggableElement(document.getElementById('playerList'));
+    
+    makeDraggableElement(document.getElementById('helpText'));
+    makeDraggableElement(document.getElementById('userVideo'));
+    
+    
+    
     var targElem=document.getElementById('cameraTarget');
     targElem.options.length=0;
     for(var i=0;i!=g_cameraTargetList.length;i++)
@@ -583,8 +640,17 @@ function initialize() {
     setCameraMode(g_camMode);
     
     
+    var chatInputField=document.getElementById('outgoingChatMessage');
+    
+ //   chatInputField.onfocus=function(){
+ //       chatFocus=true;
+ //   }
+ //   chatInputField.onblur=function(){
+ /// /      chatFocus=false;
+ //   }
+    
     document.onkeydown = function (e) {
-        
+        if(document.activeElement==chatInputField)return;
         if (updateAppKeys(e.keyCode, true)==true){
             //Got app key
         }
@@ -592,12 +658,13 @@ function initialize() {
         //Got flight key
         }
     }
-
     document.onkeyup = function (e) {
+        if(document.activeElement==chatInputField)return;
         updateControlKeys(e.keyCode, false);
     }
 
     canvas.onmousedown = function (e) {
+        //canvasFocussed=true;
         g_buttons |= 1 << e.button;
         //console.log("Got mouseDown");
         g_dragStart.x = e.x;
@@ -1434,7 +1501,13 @@ function connectToChatServer()
             recvFromServer(data);
         });
         iosocket.on('chat', function(msg) {
-            incomingChatElem.innerHTML+='<li>'+msg.id+":"+msg.message+'</li>';
+            var player=g_playerList[msg.id];
+            if(player){
+                player.chat=msg.message;
+                incomingChatElem.innerHTML+='<li>'+player.name+":"+player.chat+'</li>';
+                renderPlayerImage(player,getPlayerImageBuffer(player.id));
+                updateDynamicTexture();
+            }
         });
         iosocket.on('disconnect', function() {incomingChatElem.innerHTML+='<li>Disconnected</li>';});
     });
@@ -1442,9 +1515,20 @@ function connectToChatServer()
         if(event.which == 13) {
             event.preventDefault();
             iosocket.emit('chat',outgoingChatElem.value);
+
+            var ourPlayer=g_playerList[g_networkId];
+            if(ourPlayer)
+                ourPlayer.chat=outgoingChatElem.value;
+
             incomingChatElem.innerHTML+='<li>'+outgoingChatElem.value+'</li>';
             outgoingChatElem.value='';
             outgoingChatElem.blur();
+            /*
+            setTimeout(new function(){
+                renderPlayerImage(ourPlayer,getPlayerImageBuffer(ourPlayer.id));
+                updateDynamicTexture();
+                },1000);
+       */     
         }
     };
 };

@@ -10,7 +10,7 @@ httpServer.listen(port);
 
 var io = sio.listen(httpServer);
 
-io.set('log level',0);
+io.set('log level',2);
 
 var clients={};
 var players={};
@@ -35,7 +35,9 @@ function addRoom(name){
 function addPlayer(name,socket){
     return {    //Add the player to the world
         name: sanitize(name),
-        id:socket.id
+        id:socket.id,
+        nick:"anonymous",
+        chat:""
     }
 }
 
@@ -44,7 +46,7 @@ function addClient(sockId){
     return clients[sockId]={
     }
 }
-
+console.log("started!");
 io.sockets.on('connection', function (socket) {
     var address = socket.handshake.address;
     console.log("New connection from " + address.address + ":" + address.port + " sid:"+socket.id);

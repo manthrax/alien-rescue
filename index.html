@@ -59,6 +59,15 @@
                 position: absolute;
                 top: 10px;
                 left: 10px;
+                
+                
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+
                 z-index: 2;
                 color: yellow;
                 font-family: sans-serif;
@@ -117,8 +126,8 @@
             </div>
 
 
-            <div class="uiElem" id="helpText" style="top: 40px; left: 10px;">
-                <div class="help">
+            <!--div class="uiElem" id="helpText" style="top: 40px; left: 10px;"-->
+                <div class="uiElem" id="helpText" style="top: 40px; left: 10px;">
                     AWSD - Flight Thrust, Yaw<br/>
                     ARROW KEYS - Flight Pitch, Roll<br/>
                     Q - Switch camera mode:
@@ -155,7 +164,6 @@
                     <br/>
                     F11 - Full Screen - (Chrome)<br/>
                     H - Toggle Help<br/>
-                </div>
                 <br/>
                 <br/>
                 <button class='uiElem' onclick="this.parentElement.style.visibility = 'hidden';blur();" style='position:relative' >close</button>
@@ -170,13 +178,14 @@
                 <a id="debugText">
                     debug text
                 </a>
-                
-                <div class="uiElem" id="playerList" style="position: relative; float: bottom;">
-                    players:
+
                 </div>
                 <!--text class='uiElem' id='scriptText'>script text</text-->
-            </div>
+            <!--/div-->
 
+            <div class="uiElem" id="playerList">
+                players:
+            </div>
 
             <!-- VIDEO STREAMING -->
             <div class="uiElem" id="userVideo" style="top: 40px; left: 300px; float: right;">

@@ -5,6 +5,7 @@ var hellcatObject;
 var sandrailObject;
 var ptboatObject;
 var billboardObject;
+var hudTextObject;
 var fsQuadObject;
 var waterObject;
 var ralienModel;
@@ -21,199 +22,202 @@ var zonlyConst = {
 };
 
 var zonlyPer = {
-	world: world,
-	worldViewProjection: worldViewProjection,
-	worldInverse: worldInverse,
-	worldInverseTranspose: worldInverseTranspose,
-        viewVolume: viewVolume
+    world: world,
+    worldViewProjection: worldViewProjection,
+    worldInverse: worldInverse,
+    worldInverseTranspose: worldInverseTranspose,
+    viewVolume: viewVolume
 };
 
 var skyConst = {
-	viewInverse: viewInverse,
-	lightMatrix: lightMatrix,
-	specular: one4,
-	shininess: 50,
-	specularFactor: 0.2
+    viewInverse: viewInverse,
+    lightMatrix: lightMatrix,
+    specular: one4,
+    shininess: 50,
+    specularFactor: 0.2
 };
 
 var skyPer = {
-	lightColor: new Float32Array([1, 1, 1, 1]),
-	world: world,
-	worldViewProjection: worldViewProjection,
-	worldInverse: worldInverse,
-	worldInverseTranspose: worldInverseTranspose
+    lightColor: new Float32Array([1, 1, 1, 1]),
+    world: world,
+    worldViewProjection: worldViewProjection,
+    worldInverse: worldInverse,
+    worldInverseTranspose: worldInverseTranspose
 };
 
 var sphereConst = {
-	viewInverse: viewInverse,
-	lightMatrix: lightMatrix,
-	specular: one4,
-	shininess: 50,
-	specularFactor: 1.2
+    viewInverse: viewInverse,
+    lightMatrix: lightMatrix,
+    specular: one4,
+    shininess: 50,
+    specularFactor: 1.2
 };
 
 var spherePer = {
-	lightColor: new Float32Array([1, 1, 1, 1]),
-	world: world,
-	worldViewProjection: worldViewProjection,
-	worldInverse: worldInverse,
-	worldInverseTranspose: worldInverseTranspose,
-        scale:  5.0
+    lightColor: new Float32Array([1, 1, 1, 1]),
+    world: world,
+    worldViewProjection: worldViewProjection,
+    worldInverse: worldInverse,
+    worldInverseTranspose: worldInverseTranspose,
+    scale:  5.0
 };
 
 function setupTerrainMaterial() {
-	return {textures:textures,program:program};
+    return {
+        textures:textures,
+        program:program
+    };
 }
 
 var	terrainDef={
-// Terrain uniforms.
-	isStatic: true,
-	exportName:'terrain',
-	shaderConst:{
-		viewInverse: viewInverse,
-                lightMatrix: lightMatrix,
-		specular: one4,
-		shininess: 50,
-		specularFactor: 0.2
-	},
-	shaderPer:{
-		lightColor: new Float32Array([1, 1, 1, 1]),
-		world: world,
-		worldViewProjection: worldViewProjection,
-		worldInverse: worldInverse,
-		worldInverseTranspose: worldInverseTranspose
-	},
+    // Terrain uniforms.
+    isStatic: true,
+    exportName:'terrain',
+    shaderConst:{
+        viewInverse: viewInverse,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 50,
+        specularFactor: 0.2
+    },
+    shaderPer:{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose
+    },
 	
-	material:{
-		textures:{
-			diffuseSampler: 'assets/terrainLM.jpg',
-			detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
-			cubeSampler:skyboxTextures,
-			dirtSampler: 'assets/dirt.png',
-			grassSampler: 'assets/grass.png',
-			stoneSampler: 'assets/stone.png',
-			mixmapSampler: 'assets/terrainmix.png'
-		}
-	},
-	vertexShader:'terrainVertexShader',
-	fragmentShader:'terrainFragmentShader'
+    material:{
+        textures:{
+            diffuseSampler: 'assets/terrainLM.jpg',
+            detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
+            cubeSampler:skyboxTextures,
+            dirtSampler: 'assets/dirt.png',
+            grassSampler: 'assets/grass.png',
+            stoneSampler: 'assets/stone.png',
+            mixmapSampler: 'assets/terrainmix.png'
+        }
+    },
+    vertexShader:'terrainVertexShader',
+    fragmentShader:'terrainFragmentShader'
 }
 
 
 var	hellcatDef={
-	exportName:'Hellcat',
-	shaderConst:{
-		rotorSpins: rotorSpins,
-		viewInverse: viewInverse,
-                lightMatrix: lightMatrix,
-		specular: one4,
-		shininess: 50,
-		specularFactor: 1.2
-	},
-	shaderPer:{
-		lightColor: new Float32Array([1, 1, 1, 1]),
-		world: world,
-		worldViewProjection: worldViewProjection,
-		worldInverse: worldInverse,
-		worldInverseTranspose: worldInverseTranspose
-	},
-	material:{
-		textures:{
-			diffuseSampler: 'assets/hellcat.jpg',
-			detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
-			cubeSampler: skyboxTextures
-		}
-	},
-	vertexShader:'ralienVertexShader',
-	fragmentShader:'ralienFragmentShader'
+    exportName:'Hellcat',
+    shaderConst:{
+        rotorSpins: rotorSpins,
+        viewInverse: viewInverse,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 50,
+        specularFactor: 1.2
+    },
+    shaderPer:{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose
+    },
+    material:{
+        textures:{
+            diffuseSampler: 'assets/hellcat.jpg',
+            detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
+            cubeSampler: skyboxTextures
+        }
+    },
+    vertexShader:'ralienVertexShader',
+    fragmentShader:'ralienFragmentShader'
 }
 
 var	sandrailDef={
-	exportName:'sandrail',
-	shaderConst:{
-		rotorSpins: rotorSpins,
-		viewInverse: viewInverse,
-                lightMatrix: lightMatrix,
-		specular: one4,
-		shininess: 50,
-		specularFactor: 1.2
-	},
-	shaderPer:{
-		lightColor: new Float32Array([1, 1, 1, 1]),
-		world: world,
-		worldViewProjection: worldViewProjection,
-		worldInverse: worldInverse,
-		worldInverseTranspose: worldInverseTranspose
-	},
-	material:{
-		textures:{
-			diffuseSampler: 'assets/sandrail.png',
-			detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
-			cubeSampler: skyboxTextures
-		}
-	},
-	vertexShader:'ralienVertexShader',
-	fragmentShader:'ralienFragmentShader'
+    exportName:'sandrail',
+    shaderConst:{
+        rotorSpins: rotorSpins,
+        viewInverse: viewInverse,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 50,
+        specularFactor: 1.2
+    },
+    shaderPer:{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose
+    },
+    material:{
+        textures:{
+            diffuseSampler: 'assets/sandrail.png',
+            detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
+            cubeSampler: skyboxTextures
+        }
+    },
+    vertexShader:'ralienVertexShader',
+    fragmentShader:'ralienFragmentShader'
 }
 
 var	ptboatDef={
-	exportName:'ptboat',
-	shaderConst:{
-		rotorSpins: rotorSpins,
-		viewInverse: viewInverse,
-                lightMatrix: lightMatrix,
-		specular: one4,
-		shininess: 50,
-		specularFactor: 1.2
-	},
-	shaderPer:{
-		lightColor: new Float32Array([1, 1, 1, 1]),
-		world: world,
-		worldViewProjection: worldViewProjection,
-		worldInverse: worldInverse,
-		worldInverseTranspose: worldInverseTranspose
-	},
-	material:{
-		textures:{
-			diffuseSampler: 'assets/ptboat.png',
-			detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
-			cubeSampler: skyboxTextures
-		}
-	},
-	vertexShader:'ralienVertexShader',
-	fragmentShader:'ralienFragmentShader'
+    exportName:'ptboat',
+    shaderConst:{
+        rotorSpins: rotorSpins,
+        viewInverse: viewInverse,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 50,
+        specularFactor: 1.2
+    },
+    shaderPer:{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose
+    },
+    material:{
+        textures:{
+            diffuseSampler: 'assets/ptboat.png',
+            detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
+            cubeSampler: skyboxTextures
+        }
+    },
+    vertexShader:'ralienVertexShader',
+    fragmentShader:'ralienFragmentShader'
 }
 
 var chopperDef={
-	exportName:'Cube002',
-	shaderConst:{
-		rotorSpins: rotorSpins,
-		viewInverse: viewInverse,
-                lightMatrix: lightMatrix,
-		specular: one4,
-		shininess: 50,
-		specularFactor: 1.2,
-                viewVolume: viewVolume
-	},
+    exportName:'Cube002',
+    shaderConst:{
+        rotorSpins: rotorSpins,
+        viewInverse: viewInverse,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 50,
+        specularFactor: 1.2,
+        viewVolume: viewVolume
+    },
 	
-	shaderPer :{
-		lightColor: new Float32Array([1, 1, 1, 1]),
-		world: world,
-		worldViewProjection: worldViewProjection,
-		worldInverse: worldInverse,
-		worldInverseTranspose: worldInverseTranspose
-	},
-	material:{
-		textures:{
-			diffuseSampler: 'assets/oh6tex.png',
-			detailSampler:'assets/MaPZone[Planet_01_diffuse].png',
-			cubeSampler:skyboxTextures
-		}
-	},
-	vertexShader:'chopperVertexShader',
-	fragmentShader:'chopperFragmentShader',
-	depthVertexShader:'chopperVertexShader',
-	depthFragmentShader:'depthOnlyFragmentShader'
+    shaderPer :{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose
+    },
+    material:{
+        textures:{
+            diffuseSampler: 'assets/oh6tex.png',
+            detailSampler:'assets/MaPZone[Planet_01_diffuse].png',
+            cubeSampler:skyboxTextures
+        }
+    },
+    vertexShader:'chopperVertexShader',
+    fragmentShader:'chopperFragmentShader',
+    depthVertexShader:'chopperVertexShader',
+    depthFragmentShader:'depthOnlyFragmentShader'
 };
 
 
@@ -222,7 +226,7 @@ var ralienDef={
     exportName:"ralien",
     shaderConst:{
         viewInverse: viewInverse,
-	lightMatrix: lightMatrix,
+        lightMatrix: lightMatrix,
         specular: one4,
         shininess: 50,
         specularFactor: 1.2
@@ -246,127 +250,154 @@ var ralienDef={
 }
 
 var	billboardDef={
-	exportName:'billboard',
-	shaderConst:{
-		viewInverse: viewInverse,
-                lightMatrix: lightMatrix,
-		specular: one4,
-		shininess: 0,
-		specularFactor: 0.0
-	},
-	shaderPer:{
-		lightColor: new Float32Array([1, 1, 1, 1]),
-		world: world,
-		worldViewProjection: worldViewProjection,
-		worldInverse: worldInverse,
-		worldInverseTranspose: worldInverseTranspose
-	},
-	material:{
-		textures:{
-			diffuseSampler: 'assets/billboard1024.png',
-			detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
-			cubeSampler: skyboxTextures
-		}
-	},
-	vertexShader:'billboardVertexShader',
-	fragmentShader:'billboardFragmentShader'
+    exportName:'billboard',
+    shaderConst:{
+        viewInverse: viewInverse,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 0,
+        specularFactor: 0.0
+    },
+    shaderPer:{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose
+    },
+    material:{
+        textures:{
+            diffuseSampler: 'assets/billboard1024.png',
+            detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
+            cubeSampler: skyboxTextures
+        }
+    },
+    vertexShader:'billboardVertexShader',
+    fragmentShader:'billboardFragmentShader'
+}
+
+var	hudTextDef={
+    exportName:'hudText',
+    shaderConst:{
+        viewInverse: viewInverse,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 0,
+        specularFactor: 0.0
+    },
+    shaderPer:{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose
+    },
+    material:{
+        textures:{
+            diffuseSampler: 'assets/billboard512.png',
+            detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
+            cubeSampler: skyboxTextures
+        }
+    },
+    vertexShader:'billboardVertexShader',
+    fragmentShader:'billboardFragmentShader'
 }
 
 var	fsQuadDef={
-	exportName:'fsQuad',
-	shaderConst:{
+    exportName:'fsQuad',
+    shaderConst:{
         worldViewProjection:worldViewProjection,
         orthoWorldViewProjection:orthoWorldViewProjection,
         projectionInverse: projectionInverse,
-		viewInverse: viewInverse,
-		cameraMatrix: cameraMatrix,
-		frustumFarCorners: frustumFarCorners,
-		viewProjectionInverse:viewProjectionInverse,
-		worldViewProjectionInverse:worldViewProjectionInverse,
+        viewInverse: viewInverse,
+        cameraMatrix: cameraMatrix,
+        frustumFarCorners: frustumFarCorners,
+        viewProjectionInverse:viewProjectionInverse,
+        worldViewProjectionInverse:worldViewProjectionInverse,
         orthoProjectionInverse: orthoProjectionInverse,
-		orthoViewInverse: orthoViewInverse,
+        orthoViewInverse: orthoViewInverse,
 
-                lightMatrix: lightMatrix,
-		specular: one4,
-		shininess: 0,
-		specularFactor: 0.0
-	},
-	shaderPer:{
-		lightColor: new Float32Array([1, 1, 1, 1]),
-		world: world,
-		view: view,
-		worldViewProjection: worldViewProjection,
-		worldInverse: worldInverse,
-		worldInverseTranspose: worldInverseTranspose,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 0,
+        specularFactor: 0.0
+    },
+    shaderPer:{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        view: view,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose,
         viewInverse:viewInverse,
         orthoProjectionInverse: orthoProjectionInverse,
-		orthoViewInverse: orthoViewInverse
-	},
-	material:{
-		textures:{
-			diffuseSampler: 'assets/billboard1024.png',
-			depthSampler: 'assets/MaPZone[Planet_01_diffuse].png',
-			shadowSampler: 'assets/sandrail.png'
-		}
-	},
-	vertexShader:'texVertexShader',
-	fragmentShader:'texFragmentShader'
+        orthoViewInverse: orthoViewInverse
+    },
+    material:{
+        textures:{
+            diffuseSampler: 'assets/billboard1024.png',
+            depthSampler: 'assets/MaPZone[Planet_01_diffuse].png',
+            shadowSampler: 'assets/sandrail.png'
+        }
+    },
+    vertexShader:'texVertexShader',
+    fragmentShader:'texFragmentShader'
 }
 
 var	waterDef={
-	exportName:'waterPlane',
-	shaderConst:{
-		viewInverse: viewInverse,
-                lightMatrix: lightMatrix,
-		specular: one4,
-		shininess: 0,
-		timers: g_timers,
-		specularFactor: 0.0,
-		screenToRT: screenToRT
-	},
-	shaderPer:{
-		lightColor: new Float32Array([1, 1, 1, 1]),
-		world: world,
-		worldViewProjection: worldViewProjection,
-		worldInverse: worldInverse,
-		worldInverseTranspose: worldInverseTranspose
-	},
-	material:{
-		textures:{
-			diffuseSampler: 'assets/MaPZone[stone_01_normal].png',
-			depthSampler: 'assets/MaPZone[Planet_01_diffuse].png',
-			cubeSampler: skyboxTextures
-		}
-	},
-	vertexShader:'waterVertexShader',
-	fragmentShader:'waterFragmentShader'
+    exportName:'waterPlane',
+    shaderConst:{
+        viewInverse: viewInverse,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 0,
+        timers: g_timers,
+        specularFactor: 0.0,
+        screenToRT: screenToRT
+    },
+    shaderPer:{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose
+    },
+    material:{
+        textures:{
+            diffuseSampler: 'assets/MaPZone[stone_01_normal].png',
+            depthSampler: 'assets/MaPZone[Planet_01_diffuse].png',
+            cubeSampler: skyboxTextures
+        }
+    },
+    vertexShader:'waterVertexShader',
+    fragmentShader:'waterFragmentShader'
 }
 
 var	borgDef={
-	exportName:'borg',
-	shaderConst:{
-		viewInverse: viewInverse,
-		lightMatrix: lightMatrix,
-		specular: one4,
-		shininess: 0,
-		specularFactor: 0.0
-	},
-	shaderPer:{
-		lightColor: new Float32Array([1, 1, 1, 1]),
-		world: world,
-		worldViewProjection: worldViewProjection,
-		worldInverse: worldInverse,
-		worldInverseTranspose: worldInverseTranspose
-	},
-	material:{
-		textures:{
-			diffuseSampler: 'assets/borg.png',
-			detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
-			cubeSampler: skyboxTextures
-		}
-	},
-	vertexShader:'billboardVertexShader',
-	fragmentShader:'billboardFragmentShader'
+    exportName:'borg',
+    shaderConst:{
+        viewInverse: viewInverse,
+        lightMatrix: lightMatrix,
+        specular: one4,
+        shininess: 0,
+        specularFactor: 0.0
+    },
+    shaderPer:{
+        lightColor: new Float32Array([1, 1, 1, 1]),
+        world: world,
+        worldViewProjection: worldViewProjection,
+        worldInverse: worldInverse,
+        worldInverseTranspose: worldInverseTranspose
+    },
+    material:{
+        textures:{
+            diffuseSampler: 'assets/borg.png',
+            detailSampler: 'assets/MaPZone[Planet_01_diffuse].png',
+            cubeSampler: skyboxTextures
+        }
+    },
+    vertexShader:'billboardVertexShader',
+    fragmentShader:'billboardFragmentShader'
 }
 
 
@@ -380,9 +411,9 @@ function setupGrappler() {
     var program = createProgramFromTags('sphereVertexShader', 'sphereFragmentShader');
  
     var arrays = tdl.primitives.createCylinder(0.25,
-    5.0,
-    6,
-    16);    
+        5.0,
+        6,
+        16);    
     return new tdl.models.Model(program, arrays, textures);
     
 }

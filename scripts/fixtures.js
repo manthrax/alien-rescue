@@ -497,7 +497,11 @@ function makeTetraFixture(position, model, Const, Per, updater) {
     addBody(sphere, sphereConst, spherePer, v3addv(v3t0, position, v3mulv(v3t1, [-0.866, -0.5, -0.5], tscale)));
     addBody(sphere, sphereConst, spherePer, v3addv(v3t0, position, v3mulv(v3t1, [0.866, -0.5, -0.5], tscale)));
     addBody(sphere, sphereConst, spherePer, v3addv(v3t0, position, v3mulv(v3t1, [0, 0.5, 0], tscale)));
-    for (var t = 0; t < 4; t++) bodies[ibase + t].visible = g_debugBodies;
+    for (var t = 0; t < 4; t++){
+        var bod=bodies[ibase + t]
+        bod.visible = g_debugBodies;
+        bod.radius = 0.5;
+    }
     addDistanceConstraint(bodies[ibase], bodies[ibase + 1]);
     addDistanceConstraint(bodies[ibase + 1], bodies[ibase + 2]);
     addDistanceConstraint(bodies[ibase + 2], bodies[ibase]);

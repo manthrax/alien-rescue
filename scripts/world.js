@@ -282,16 +282,17 @@ function loadSettings(){
     v3copy(g_lastEyePosition,g_eyePosition);
     g_graphicsQuality=2;
     g_renderDebugBodies=false;
-    g_paused=true;
+    g_paused=false;
+    g_showHelp=true;
     if(localStorage['appRunning']&&localStorage['appRunning']==true){
         alert("App already ruunning!");
     }else{
 //        localStorage['appRunning']=true;
     }
     
-    if(localStorage['settings']){
+    if(localStorage['settings']&&false){//){//
         var settings=JSON.parse(localStorage['settings']);
-        if(settings.version && settings.version==g_settingsVersion)
+        if( settings.version && settings.version==g_settingsVersion)
         {
             g_buttons = settings.buttons;
             v3copy(g_viewRotation,settings.viewRotation);
@@ -319,6 +320,13 @@ function setMouseCapture(capture){
         document.exitPointerLock();        
 }
 
+function setHelpActivation(helpActive){
+    setElementVisibility('helpText',helpActive);
+    setElementVisibility('userVideo',helpActive);
+    if(helpActive==false)
+        canvas.focus();
+}
+
 function synchronizeSettingsUI(){
     console.log("sync");
     var targElem=document.getElementById('cameraTarget');
@@ -331,8 +339,8 @@ function synchronizeSettingsUI(){
     document.getElementById('soundVolume').selectedIndex=parseInt((g_audioLevel*1.01)/0.2);
 
     document.getElementById('showBodies').selectedIndex=g_renderDebugBodies?1:0;
-           
-    setElementVisibility('helpText',g_showHelp);
+    
+    setHelpActivation(g_showHelp);
 }
 
 function setElementVisibility(elemID,makeVisible){
@@ -402,7 +410,7 @@ function sendFixtureToServer(fix){
         msg+='~'+bod.position[0]+'~'+bod.position[1]+'~'+bod.position[2]+
              '~'+bod.linearVelocity[0]+'~'+bod.linearVelocity[1]+'~'+bod.linearVelocity[2];
     }
-    sendToServer(msg);
+    iosocket.emit('sim',msg);
 }
 
 function sendControlsToServer(fix){
@@ -414,7 +422,7 @@ function sendControlsToServer(fix){
         for(var a in controls.active[ca])
             msg+='~'+controls.active[ca][a];
     msg+='~'+controls.flipOver;
-    sendToServer(msg);
+    iosocket.emit('sim',msg);
 }
 
 function parseBool(str) {
@@ -422,7 +430,7 @@ function parseBool(str) {
 }
 
 function recvFromServer(msg){
-    var cmd=msg.split('~');
+    var cmd=msg.data.split('~');
     var idx=0;
     while(idx<cmd.length){
         var remaining=cmd.length-idx;
@@ -500,7 +508,9 @@ function initialize() {
     chopperObject = buildObjectFromDef(chopperDef);
 	
     billboardObject = buildObjectFromDef(billboardDef,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
-	
+    
+    hudTextObject = buildObjectFromDef(hudTextDef,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);//,[0,1,2],[1,1,1],[0,0,0]);    
+
     borgObject = buildObjectFromDef(borgDef,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
 	
     fast.matrix4.translation(borgObject.matrix, [-208.0,53.0,127.0]);
@@ -518,8 +528,9 @@ function initialize() {
 
     skybox = setupSkybox();
 
-    setInterval(updateVideoTexture, 66);//66=15 fps.. 33=30fps 16=60fps
+    setInterval(updateLocalVideoTexture, 66);//66=15 fps.. 33=30fps 16=60fps
 	
+    //setInterval(updateDynamicTexture, 66);//66=15 fps.. 33=30fps 16=60fps
 
     Log("--Setup Terrain---------------------------------------");
     for(var tx=minTx;tx<maxTx;tx++)
@@ -676,7 +687,7 @@ function updateAppKeys(keyCode, state) {
     else if (keyCode == KEY.O)audio.play("helo",1.0,null,null);
     else if (keyCode == KEY.H){
         if(g_showHelp==true)g_showHelp=false; else g_showHelp=true;
-        setElementVisibility('helpText',g_showHelp);
+        setHelpActivation(g_showHelp);
     }else if (keyCode == KEY.P) {
         console.log("pause hit");
         g_paused = !g_paused;
@@ -988,7 +999,20 @@ function updateRTTexture() {
 
 }
 
-function updateVideoTexture() {
+function updateDynamicTexture() {
+    if(!g_dynamicCanvas)
+        return;
+    gl.bindTexture(gl.TEXTURE_2D,hudTextObject.model.textures.diffuseSampler.texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, g_dynamicCanvas);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+
+function updateLocalVideoTexture() {
+    if(g_videoElement.readyState<3) //Make sure video is available...
+        return;
     gl.bindTexture(gl.TEXTURE_2D,billboardObject.model.textures.diffuseSampler.texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -1102,7 +1126,9 @@ function renderForward(){
         g_debugObjectQueue.draw();
 	
 	
-        drawObject(billboardObject);
+    //    drawObject(billboardObject);
+
+        drawObject(hudTextObject);
 			
         gl.disable(gl.BLEND);
         gl.depthFunc(gl.EQUAL);
@@ -1371,11 +1397,15 @@ function gameLoop() { //17H X7Y2
     }
 }
 
+
+
+
+/*********** NETWORKING *********/
+
+var g_playerList={};
+var g_networkId=null;
 var iosocket;
 
-function sendToServer(msg){
-    iosocket.send(msg);
-}
 
 function connectToChatServer()
 {
@@ -1384,24 +1414,34 @@ function connectToChatServer()
     iosocket = io.connect("/");//:3001");
     iosocket.on('connect', function () {
         incomingChatElem.innerHTML+='<li>Connected</li>';
-        iosocket.on('data', videoStreamHandler);
-        iosocket.on('message', function(message) {
-            if(message.indexOf("data")==0){
-                //alert("Got data!"); 
-                console.log("Got data messgae!");
-            }else
-            if(message.indexOf("chat~")==0){
-                incomingChatElem.innerHTML+='<li>'+message+'</li>';
-            }else{
-                recvFromServer(message);
+        iosocket.on('video', videoStreamHandler);
+        iosocket.on('welcome', function(data) {
+            console.log("got welcome");
+            g_networkId = data;
+        });
+        iosocket.on('players', function(players) {
+            g_playerList = players;
+            var elem=document.getElementById("playerList");
+            var str="<list>PlayerList:</br>\n";
+            for(var key in players){
+                var p=players[key];
+                str+="<li>"+key+":"+"</li>\n";
             }
+            str+="</list>";
+            elem.innerHTML=str;
+        });
+        iosocket.on('sim', function(data) {
+            recvFromServer(data);
+        });
+        iosocket.on('chat', function(msg) {
+            incomingChatElem.innerHTML+='<li>'+msg.id+":"+msg.message+'</li>';
         });
         iosocket.on('disconnect', function() {incomingChatElem.innerHTML+='<li>Disconnected</li>';});
     });
     outgoingChatElem.onkeypress=function(event) {
         if(event.which == 13) {
             event.preventDefault();
-            iosocket.send('chat~'+outgoingChatElem.value);
+            iosocket.emit('chat',outgoingChatElem.value);
             incomingChatElem.innerHTML+='<li>'+outgoingChatElem.value+'</li>';
             outgoingChatElem.value='';
             outgoingChatElem.blur();

@@ -1,1173 +1,1186 @@
 <html>
-<head>
-    <title>new box</title>
-    <style type="text/css">
+    <head>
+        <title>new box</title>
+        <style type="text/css">
 
-        #shaderIFrame , #imageCache {
+            #shaderIFrame , #imageCache {
                 width: 0px;
                 height: 0px;
                 visibility:hidden;
                 background-color: #d8da3d 
-        }
-
-        html, body {
-          width: 100%;
-          height: 100%;
-          border: 0px;
-          padding: 0px;
-          margin: 0px;
-          background-color: black;
-          font-family: sans-serif;
-          overflow: hidden;
-          color: #fff;
-        }
-
-        a {
-          color: #fff;
-        }
-
-        video {
-          display: no4ne;
-        }
-
-        CANVAS {
-          background-color: black;
-        }
-
-        .uiTitle {
-
-            position: absolute;
-            top:0;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            width: 512px;
-            height: 175px;
-
-            margin: auto;
-
-            z-index: 2;
-            background-color: rgba(0,0,0,0.25);
-            border-radius: 6px;
-            padding: 4px;
-            color: yellow;
-            
-            text-align: center
-            
-        }
-        .uiElem {
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          z-index: 2;
-          color: yellow;
-          font-family: sans-serif;
-          font-size: small;
-          background-color: rgba(0,0,0,0.5);
-          border-radius: 6px;
-          padding: 4px;
-        }
-
-        #viewContainer {
-          width: 100%;
-          height: 100%;
-        }
-
-    </style>
-    <script type="text/javascript" src="scripts/tdl/base.js"></script>
-    <script src="node_modules\socket.io\node_modules\socket.io-client\dist\socket.io.js"></script>
-    <script type="text/javascript" src="scripts/meshes/oh6.js"></script>
-    <script type="text/javascript" src="scripts/meshes/terrain.js"></script>
-    <script type="text/javascript" src="scripts/meshes/path.js"></script>
-    <script type="text/javascript" src="scripts/meshes/sandrail.js"></script>
-    <script type="text/javascript" src="scripts/meshes/ptboat.js"></script>
-    <script type="text/javascript" src="scripts/meshes/hellcat.js"></script>
-    <script type="text/javascript" src="scripts/meshes/ralien.js"></script>
-    <script type="text/javascript" src="scripts/meshes/billboard.js"></script>
-    <script type="text/javascript" src="scripts/meshes/fsQuad.js"></script>
-    <script type="text/javascript" src="scripts/meshes/waterPlane.js"></script>
-    <script type="text/javascript" src="scripts/meshes/borg.js"></script>
-
-    <script type="text/javascript" src="scripts/util.js"></script>
-    <script type="text/javascript" src="scripts/audio.js"></script>
-    <script type="text/javascript" src="scripts/rendering.js"></script>
-    <script type="text/javascript" src="scripts/simulation.js"></script>
-
-    <script type="text/javascript" src="scripts/meshes/objectDefs.js"></script>
-    <script type="text/javascript" src="scripts/globals.js"></script>
-    <script type="text/javascript" src="scripts/world.js"></script>
-    <script type="text/javascript" src="scripts/fixtures.js"></script>
-</head>
-
-<body onbeforeunload="worldClosed();" oncontextmenu="return false;" style="cursor: crosshair">
-
-<!--div id="info"><a href="http://threedlibrary.googlecode.com" target="_blank">tdl.js</a> - example</div-->
-
-<video id="video" autoplay controls style="display:none" width="512" height="512">
- <source src="assets/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'> 
-<!--video id="video" autoplay loop style="display:none" controls="controls">
-your browser does not support the video tag--> 
-</video>
-
-<div id="viewContainer">
-
-    <div class="uiElem" id="fpsContainer">
-      <div class="fps"><span id="fps"></span></div>
-    </div>
-    
-
-    <div class="uiElem" id="helpText" style="top: 40px; left: 10px;">
-      <div class="help">
-       AWSD - Flight Thrust, Yaw<br/>
-       ARROW KEYS - Flight Pitch, Roll<br/>
-       Q - Switch camera mode:
-       <select id='cameraMode' class='uiElem' style='position:relative' onchange='setCameraMode(selectedIndex);blur();'>
-            <option>3rd person</option>
-           <option>Free</option>
-           <option>Follow path</option>
-       </select>
-       <br/>
-       E - Switch camera target:
-       <select id='cameraTarget' class='uiElem' style='position:relative' onchange='selectCameraTarget(selectedIndex);blur();' >
-       </select>
-       <br/>
-       G - Graphics quality: 
-       <select id='graphicsQuality'  class='uiElem' style='position:relative' onchange='g_graphicsQuality=selectedIndex;blur();'>
-           <option>Single Pass</option>
-           <option>Multipass!</option>
-           <option>gnar pthnagn</option>
-       </select>
-       <br/>
-       Sound:
-       <select id='soundVolume'  class='uiElem' style='position:relative' onchange='g_audioLevel=0.2*selectedIndex;audio.globalVolume(g_audioLevel);blur();'>
-           <option>0 - Off</option>
-           <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-       </select>
-       <br/>
-       Bodies:
-       <select id='showBodies'  class='uiElem' style='position:relative' onchange='g_renderDebugBodies=(selectedIndex==0)?false:true;blur();'>
-           <option>Hide</option>
-           <option>Show</option>
-       </select>
-       <br/>
-       <br/>
-       <br/>
-       F11 - Full Screen - (Chrome)<br/>
-       H - Toggle Help<br/>
-      </div>
-      <br/>
-      <br/>
-      <button class='uiElem' onclick="this.parentElement.style.visibility = 'hidden';blur();" style='position:relative' >close</button>
-      <br/>
-      <select class='uiElem' id='scriptMenu' style='position:relative'><option>test</option></select>
-      <br/>
-      <br/>
-        Incoming Chat:&nbsp;<ul id="incomingChatMessages"></ul>
-        <input type="text" id="outgoingChatMessage">
-
-        <a id="debugText">
-            debug text
-        </a>
-      <!--text class='uiElem' id='scriptText'>script text</text-->
-
-        <!-- VIDEO STREAMING -->
- 	<div class="uiElem" id="userVideo" style="top: 40px; left: 10px; ">
-	<h1><video autoplay id="sourcevid" width="512" height="512"></video></h1>
-        <img src="" id="frame" style="width:128px;height:128px"/>
-	<canvas id="output"></canvas>
-	<div id="log"></div>
-	</div>
-	<script type="text/javascript" src="scripts/video.js"></script>
-
-    </div>
-    <div class="uiTitle" id="titleDiv" style="top: 40px; left: 10px;">
-        <img src="assets/title0001.png"/>
-        <br/>
-        <a>P to Resume..<br/>AWSD + Arrow Keys to Fly..<br/>Space - Grapple nearest..<br/>E - Change Vehicle<br/>R - Rescusitate</a>
-    </div>
-    <canvas id="canvas" width="1024" height="768" style="width: 100%; height: 100%;"></canvas>
-</div>
-
-
-<!--iframe id="shaderIFrame" onload="console.log('Frame Loaded');" src="shaders.html">
-</iframe>
-<script type="text/javascript">
-
-</script-->
-<script id='shaderScript' type="text/glsl">
-
-SCRIPT='chopperVertexShader';
-
-uniform mat4 worldViewProjection;
-uniform mat4 lightMatrix;
-uniform vec3 rotorSpins;
-uniform mat4 world;
-uniform mat4 viewInverse;
-uniform mat4 worldInverseTranspose;
-attribute vec4 position;
-attribute vec3 normal;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-
-void main() {
-  v_texCoord = texCoord;
-  v_position = position;
-  vec3 vp0=vec3(0.458,-0.004,0.69);
-  vec3 vp1=vec3(-2.673,-0.004,0.019);
-  if(v_texCoord.y<-2.0){
-   mat3 spinMat=mat3(sin(rotorSpins.x),0.0,cos(rotorSpins.x),0.0,1.0,0.0,-cos(rotorSpins.x),0.0,sin(rotorSpins.x));
-  v_position.xyz = ((v_position.xyz-vp1)*spinMat)+vp1;
-  }  
-  else if(v_texCoord.y<-1.0){
-   mat3 spinMat=mat3(sin(rotorSpins.x),cos(rotorSpins.x),0.0,-cos(rotorSpins.x),sin(rotorSpins.x),0.0,0.0,0.0,1.0);
-    v_position.xyz = ((v_position.xyz-vp0)*spinMat)+vp0;
-  }  
-   
-  v_position = (worldViewProjection * v_position);
-   
-  v_refCoord = position.xyz;
-  v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
-  v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
-  v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
-  
-  gl_Position = v_position;
-}
-
-SCRIPT='chopperFragmentShader';
-
-#ifdef GL_ES
-precision highp float;
-#endif
-uniform vec4 lightColor;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-
-uniform sampler2D diffuseSampler;
-uniform samplerCube cubeSampler;
-uniform vec4 specular;
-uniform sampler2D bumpSampler;
-uniform float shininess;
-uniform float specularFactor;
-
-vec4 lit(float l ,float h, float m) {
-  return vec4(1.0,
-              max(l, 0.0),
-              (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
-              1.0);
-}
-void main() {
-  vec4 bg = textureCube(cubeSampler, v_surfaceToView*-1.0);
-  vec4 ref = textureCube(cubeSampler, reflect(v_surfaceToView*-1.0,v_normal));
-  vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
-  vec3 normal = normalize(v_normal);
-  vec3 surfaceToLight = normalize(v_surfaceToLight);
-  vec3 surfaceToView = normalize(v_surfaceToView);
-  vec3 halfVector = normalize(surfaceToLight + surfaceToView);
-  float vl=length(v_surfaceToView);
-  vec3 skycolor=vec3(0);
-  
-  float shine=shininess;
-  vec4 litR = lit(dot(normal, surfaceToLight), dot(normal, halfVector), shine);
-  if( v_texCoord.x<1.0){
-   if( v_texCoord.y<-1.0){
-	////diffuse=vec4(1,0,0,0);////(diffuse*0.75)+(ref*0.25);
-	////shine=0.1;
-	////litR.y=1.0;
-	////litR.z=0.0;
-   }else{
-	litR.z*=0.5;
-   }
-   diffuse=vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
-  }else{
-   diffuse=vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
-   diffuse=(diffuse*0.5)+(ref*0.25)+(bg*0.25);
-  }
-  gl_FragColor = diffuse;
-  gl_FragColor.rgb = max(gl_FragColor.rgb,skycolor.rgb);
-}
-
-SCRIPT='sphereVertexShader';
-
-uniform mat4 worldViewProjection;
-uniform mat4 lightMatrix;
-uniform mat4 world;
-uniform mat4 viewInverse;
-uniform mat4 worldInverseTranspose;
-uniform float   scale;
-attribute vec4 position;
-attribute vec3 normal;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-void main() {
-  v_texCoord = texCoord;
-  vec4  vpos=vec4(position.xyz*scale,1.0);
-  v_position = (worldViewProjection * vpos);
-  v_refCoord = position.xyz;
-  v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
-  v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
-  v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
-  gl_Position = v_position;
-}
-
-SCRIPT='sphereFragmentShader';
-
-#ifdef GL_ES
-precision highp float;
-#endif
-uniform vec4 lightColor;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-
-uniform sampler2D diffuseSampler;
-uniform samplerCube cubeSampler;
-uniform vec4 specular;
-uniform sampler2D bumpSampler;
-uniform float shininess;
-uniform float specularFactor;
-
-vec4 lit(float l ,float h, float m) {
-  return vec4(1.0,
-              max(l, 0.0),
-              (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
-              1.0);
-}
-void main() {
-  vec4 bg = textureCube(cubeSampler, v_surfaceToView*-1.0);
-  vec4 ref = textureCube(cubeSampler, reflect(v_surfaceToView*-1.0,v_normal));
-  vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
-  vec3 normal = normalize(v_normal);
-  vec3 surfaceToLight = normalize(v_surfaceToLight);
-  vec3 surfaceToView = normalize(v_surfaceToView);
-  vec3 halfVector = normalize(surfaceToLight + surfaceToView);
-  vec4 litR = lit(dot(normal, surfaceToLight), dot(normal, halfVector), shininess);
-  float vl=length(v_surfaceToView);
-  vec3 skycolor=vec3(0);
-  if(vl>200.0){
-   vl=min(100.0,(vl-200.0))/100.0;
-   
-   diffuse.rgb*=1.0-vl;
-   ////skycolor = textureCube(cubeSampler, v_refCoord).rgb*vl;
-  }
-  
-  gl_FragColor = (ref+bg)*0.5;////vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
-  gl_FragColor.rgb = max(gl_FragColor.rgb,skycolor.rgb);
-  gl_FragColor.a=abs(normal.z);
-}
-
-SCRIPT='terrainVertexShader';
-
-uniform mat4 worldViewProjection;
-uniform mat4 lightMatrix;
-uniform mat4 world;
-uniform mat4 viewInverse;
-uniform mat4 worldInverseTranspose;
-attribute vec4 position;
-attribute vec3 normal;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-void main() {
-  v_texCoord = texCoord;
-  v_position = (worldViewProjection * position);
-  
-  
-  v_refCoord = position.xyz;
-  v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
-  v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
-  v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
-  gl_Position = v_position;
-}
-
-SCRIPT='terrainFragmentShader';
-
-#ifdef GL_ES
-precision highp float;
-#endif
-
-uniform vec4 lightColor;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-
-
-uniform sampler2D 	dirtSampler;
-uniform sampler2D 	grassSampler;
-uniform sampler2D 	stoneSampler;
-uniform sampler2D 	mixmapSampler;
-
-uniform sampler2D 	diffuseSampler;
-uniform sampler2D 	detailSampler;
-uniform sampler2D 	bumpSampler;
-uniform samplerCube cubeSampler;
-uniform vec4 		specular;
-uniform float 		shininess;
-uniform float 		specularFactor;
-
-vec4 lit(float l ,float h, float m) {
-  return vec4(1.0,
-              max(l, 0.0),
-              (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
-              1.0);
-}
-void main() {
- vec2 detailTexCoord=v_texCoord*32.0;
- vec4 mix=texture2D(mixmapSampler,v_texCoord);
- mix.z=0.01;
- float sum=mix.x+mix.y+mix.z;
- mix/=sum;
- vec4 tex=(texture2D(stoneSampler,detailTexCoord)*mix.y)+
-		  (texture2D(grassSampler,detailTexCoord)*mix.x)+
-		  (texture2D(dirtSampler,detailTexCoord)*mix.z);
- tex.a=1.0;
- gl_FragColor=tex;
-}
-
-void tmain() {
-  vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
-  //// vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
-  vec3 normal = normalize(v_normal);
-  vec3 surfaceToLight = normalize(v_surfaceToLight);
-  vec3 surfaceToView = normalize(v_surfaceToView);
-  vec3 halfVector = normalize(surfaceToLight + surfaceToView);
-  vec4 litR = lit(dot(normal, surfaceToLight),
-					dot(normal, halfVector), shininess);
-  float vl=length(v_surfaceToView);
-  vec3 skycolor=vec3(0);
-  float fogstart=150.0;
-  float detailstart=100.0;
-  
-  ////diffuse.r*=(gl_PrimitiveID&3);
-
-  if(vl>fogstart){
-	vl=min(fogstart,(vl-fogstart))/fogstart;
-	
-	diffuse.rgb*=1.0-vl;
-	skycolor = textureCube(cubeSampler, v_refCoord).rgb*vl;
-	diffuse.rgb=max(diffuse.rgb,skycolor.rgb);
-   ////diffuse += texture2D(diffuseSampler, v_texCoord*10.0)*(1.0-vl);
-  }else if(vl<detailstart){
-	vl=1.0-(vl/detailstart);
-	vec4 detail =texture2D(detailSampler, vec2(v_texCoord*8.0));
-	vec4 detail2=texture2D(detailSampler, vec2(v_texCoord.y*7.0,v_texCoord.x*-7.0));
-	vec4 detail3=texture2D(detailSampler, vec2(v_texCoord.y*3.0,v_texCoord.x*3.0));
-	detail=(((detail+detail2+detail3)*0.33)+vec4(0.5));
-	if(detail.x>1.25){
-	 detail.x-=1.25;////(diffuse*(1.0-vl))
-	 diffuse=diffuse+((vec4(detail.x*32.0)*vl)*detail3);////((diffuse.x+diffuse.y+diffuse.z)/vl
-	 
-	}
-	////else diffuse=(diffuse+detail);////((diffuse.x+diffuse.y+diffuse.z)/vl
-	////diffuse=max(max(diffuse,detail),detail2;
-	////diffuse=max(diffuse,detail);
-  }
-  ////gl_FragColor = vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
-  gl_FragColor = diffuse;
-}
-
-SCRIPT='texVertexShader';
-
-
-uniform mat4 worldViewProjection;
-uniform mat4 world;
-uniform mat4 viewInverse;
-uniform mat4 worldInverseTranspose;
-attribute vec4 position;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-void main() {
-  v_texCoord = texCoord;
-  v_position = (worldViewProjection * position);
-  gl_Position = v_position;
-}
-
-SCRIPT='texFragmentShader';
-
-#ifdef GL_ES
-precision highp float;
-#endif
-varying vec4 v_position;
-varying vec2 v_texCoord;
-uniform sampler2D diffuseSampler;
-void main() {gl_FragColor = texture2D(diffuseSampler, v_texCoord);}
-
-
-SCRIPT='skyVertexShader';
-
-uniform mat4 worldViewProjection;
-uniform mat4 world;
-uniform mat4 viewInverse;
-uniform mat4 worldInverseTranspose;
-attribute vec4 position;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec3 v_refCoord;
-void main() {
-  v_position = (worldViewProjection * position);
-  vec4 vp=vec4(position.xyz,0);
-  vp=(worldViewProjection * vp);
-  v_refCoord = position.xyz;
-  gl_Position = v_position;
-}
-
-SCRIPT='skyFragmentShader';
-
-
-#ifdef GL_ES
-precision highp float;
-#endif
-varying vec4 v_position;
-varying vec3 v_refCoord;
-uniform samplerCube cubeSampler;
-void main() {
-   gl_FragColor = textureCube(cubeSampler,  v_refCoord);
- 
-   ////Anaglyph
-   /*
-   vec3 offset=vec3(0.01,0,0)*v_position.z;
-   vec4 color=textureCube(cubeSampler,  v_refCoord+offset);
-   vec4 color2=textureCube(cubeSampler, v_refCoord-offset);
-   color=vec4(color.g*0.7+color.b*0.3,color2.g,color2.b,0);
-   ////color=vec4(0,color2.g,color2.b,0);
-   gl_FragColor = color;
-   */
-}
-
-SCRIPT='ralienVertexShader';
-
-
-uniform mat4 worldViewProjection;
-uniform mat4 lightMatrix;
-uniform mat4 world;
-uniform mat4 viewInverse;
-uniform mat4 worldInverseTranspose;
-attribute vec4 position;
-attribute vec3 normal;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-void main() {
-  v_texCoord = texCoord;
-  v_position = (worldViewProjection * position);
-  v_refCoord = position.xyz;
-  v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
-  v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
-  v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
-  gl_Position = v_position;
-}
-
-
-SCRIPT='ralienFragmentShader';
-
-
-#ifdef GL_ES
-precision highp float;
-#endif
-
-uniform vec4 lightColor;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-
-uniform sampler2D diffuseSampler;
-uniform sampler2D detailSampler;
-uniform samplerCube cubeSampler;
-
-uniform vec4 specular;
-uniform sampler2D bumpSampler;
-uniform float shininess;
-uniform float specularFactor;
-
-vec4 lit(float l ,float h, float m) {
-  return vec4(1.0,
-              max(l, 0.0),
-              (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
-              1.0);
-}
-void main() {
-  vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
-  vec3 normal = normalize(v_normal);
-  vec3 surfaceToLight = normalize(v_surfaceToLight);
-  vec3 surfaceToView = normalize(v_surfaceToView);
-  vec3 halfVector = normalize(surfaceToLight + surfaceToView);
-  vec4 litR = lit(dot(normal, surfaceToLight),
-					dot(normal, halfVector), shininess);
-  float vl=length(v_surfaceToView);
-  gl_FragColor = vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
-}
-
-SCRIPT='billboardVertexShader';
-
-
-uniform mat4 worldViewProjection;
-attribute vec4 position;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-void main() {
-  v_texCoord = vec2(texCoord.x,texCoord.y);
-  v_position = (worldViewProjection * position);
-  gl_Position = v_position;
-}
-
-SCRIPT='billboardFragmentShader';
-
-
-#ifdef GL_ES
-precision highp float;
-#endif
-varying vec2 v_texCoord;
-uniform sampler2D diffuseSampler;
-void main() {
-   gl_FragColor = texture2D(diffuseSampler, v_texCoord);////+texture2D(depthSampler, v_texCoord);
-
-}
-
-SCRIPT='depthOnlyVertexShader';
-
-uniform mat4 worldViewProjection;
-attribute vec4 position;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-void main() {
-  v_texCoord = vec2(texCoord.x,texCoord.y);
-  v_position = (worldViewProjection * position);
-  gl_Position = v_position;
-}
-
-SCRIPT='depthOnlyFragmentShader';
-
-
-#ifdef GL_ES
-precision highp float;
-#endif
-varying vec2 v_texCoord;
-varying vec4 v_position;
-uniform sampler2D diffuseSampler;
-
-uniform vec3   viewVolume;
-
-#define DEBUG_PACKING 0
-const float toFixed = 255.0/256.0;
-
-vec4 FloatToFixed(float depth)
-{
-#if DEBUG_PACKING
-	return vec4( depth, depth,depth,1.0);
-#else
-	return vec4( 
-		fract(depth*toFixed*1.0),
-		fract(depth*toFixed*255.0),
-		fract(depth*toFixed*255.0*255.0),
-		fract(depth*toFixed*255.0*255.0*255.0)
-	);
-#endif
-}
-
-
-vec4 pack_depth(const in float depth)
-{
-    const vec4 bit_shift = vec4(256.0*256.0*256.0, 256.0*256.0, 256.0, 1.0);
-    const vec4 bit_mask  = vec4(0.0, 1.0/256.0, 1.0/256.0, 1.0/256.0);
-    vec4 res = fract(depth * bit_shift);
-    res -= res.xxyz * bit_mask;
-    return res;
-}
-
-
-void main() {
- float nmldepth=v_position.z/viewVolume.z;//FAR_Z;//gl_FragCoord.z/viewVolume.z;//
- 
- gl_FragData[0] = pack_depth(nmldepth);
-}
-
-SCRIPT='DOFXPassVertexShader';
-
-
-uniform mat4 orthoWorldViewProjection;
-attribute vec4 position;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-void main() {
-  v_texCoord = vec2(texCoord.x,texCoord.y);
-  v_position = (orthoWorldViewProjection * position);
-  gl_Position = v_position;
-}
-
-
-SCRIPT='DOFXPassFragmentShader';
-
-
-#ifdef GL_ES
-precision highp float;
-#endif
-varying vec2 v_texCoord;
-uniform sampler2D depthSampler;
-uniform sampler2D diffuseSampler;
-uniform sampler2D shadowSampler;
-const float fromFixed = 256.0/255.0;
-#define DEBUG_PACKING 0
-float FixedToFloat(vec4 shadowSample)
-{
-#if DEBUG_PACKING
-	return shadowSample.r;
-#else
-	return shadowSample.r*fromFixed/(1.0) +
-		   shadowSample.g*fromFixed/(255.0) +
-		   shadowSample.b*fromFixed/(255.0*255.0) +
-		   shadowSample.a*fromFixed/(255.0*255.0*255.0);    
-#endif
-}
-
-float unpack_depth(const in vec4 rgba_depth)
-{
-    const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
-    float depth = dot(rgba_depth, bit_shift);
-    return depth;
-}
-const float focalDepth=0.05;
-void main() {
-  float depth=unpack_depth(texture2D(depthSampler, v_texCoord));
-  ////float depth=FixedToFloat(texture2D(depthSampler, v_texCoord));
-  depth=((depth-focalDepth)*2.0);
-  float blurSize = depth/512.0;////512.0; //// I've chosen this size because this will result in that every step will be one pixel wide if the RTScene texture is of size 512x512
-  vec4 sum = vec4(0.0);
-  sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 4.0*blurSize, v_texCoord.y)) * 0.05;
-  sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 3.0*blurSize, v_texCoord.y)) * 0.09;
-  sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 2.0*blurSize, v_texCoord.y)) * 0.12;
-  sum += texture2D(diffuseSampler, vec2(v_texCoord.x - blurSize, v_texCoord.y)) 	* 0.15;
-  sum += texture2D(diffuseSampler, vec2(v_texCoord.x, v_texCoord.y)) 				* 0.18;
-  sum += texture2D(diffuseSampler, vec2(v_texCoord.x + blurSize, v_texCoord.y)) 	* 0.15;
-  sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 2.0*blurSize, v_texCoord.y)) * 0.12;
-  sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 3.0*blurSize, v_texCoord.y)) * 0.09;
-  sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 4.0*blurSize, v_texCoord.y)) * 0.05;
-  gl_FragColor = vec4(sum.rgb,depth);
-}
-
-SCRIPT='DOFYPassVertexShader';
-
-
-uniform mat4 orthoWorldViewProjection;
-attribute vec4 position;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-void main() {
-  v_texCoord = vec2(texCoord.x,texCoord.y);
-  v_position = (orthoWorldViewProjection * position);
-  gl_Position = v_position;
-}
-
-SCRIPT='DOFYPassFragmentShader';
-
-
-#ifdef GL_ES
-precision highp float;
-#endif
-varying vec2 v_texCoord;
-uniform sampler2D depthSampler;
-uniform sampler2D diffuseSampler;
-uniform sampler2D shadowSampler;
-
-const float focalDepth=0.05;
-void main() {
-  vec4 c0 = texture2D(depthSampler, v_texCoord);
-  float depth=c0.a;
-  depth=((depth-focalDepth)*2.0);
-  float blurSize = depth/512.0;
-  vec4 sum = vec4(0.0);
-  sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y- 4.0*blurSize)) * 0.05;
-  sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y- 3.0*blurSize)) * 0.09;
-  sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y- 2.0*blurSize)) * 0.12;
-  sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y- blurSize	  )) * 0.15;
-  sum += c0																			 * 0.18;
-  sum += texture2D(depthSampler, vec2(v_texCoord.x ,	v_texCoord.y+ blurSize    )) * 0.15;
-  sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y+ 2.0*blurSize)) * 0.12;
-  sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y+ 3.0*blurSize)) * 0.09;
-  sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y+ 4.0*blurSize)) * 0.05;
-  gl_FragColor = vec4(sum.rgb,1.0);////sum;
-}
-
-SCRIPT='convPassVertexShader';
-
-
-uniform mat4 worldViewProjection;
-attribute vec4 position;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-void main() {
-  v_texCoord = vec2(texCoord.x,texCoord.y);  
-  v_position = (worldViewProjection * position);
-  gl_Position = v_position;
-}
-
-SCRIPT='convFragmentShader';
-
-
-#ifdef GL_ES
-precision highp float;
-#endif
-varying vec2 v_texCoord;
-uniform sampler2D depthSampler;
-uniform sampler2D diffuseSampler;
-float kernal[9]=[0.05,0.09,0.12,0.15,0.18,0.15,0.12,0.09,0.05];
-void main() {
-  vec4 sum = vec4(0.0);
-  vec4 c0 = texture2D(depthSampler, v_texCoord);
-  float blurSize = c0.a/1024.0;
-  for(int i=0;i<9;i++)
-   sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y-((i-4)*blurSize))) * 0.05;
-  gl_FragColor = vec4(sum.rgb,1.0);
-}
-
-SCRIPT='waterVertexShader';
-
-
-uniform mat4 worldViewProjection;
-uniform mat4 lightMatrix;
-uniform mat4 world;
-uniform mat4 viewInverse;
-uniform mat4 worldInverseTranspose;
-uniform vec3 timers;
-attribute vec4 position;
-attribute vec3 normal;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-void main() {
-  v_texCoord = texCoord*8.0;
-  v_texCoord+=vec2(timers.x*0.01,(timers.x+0.3)*0.0016);
-  v_position = (worldViewProjection * position);
-  v_refCoord = position.xyz;
-  v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
-  v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
-  v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
-  
-  gl_Position = v_position;
-}
-
-SCRIPT='waterFragmentShader';
-
-
-#ifdef GL_ES
-precision highp float;
-#endif
-
-uniform vec4 lightColor;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-varying vec3 v_refCoord;
-varying vec3 v_normal;
-varying vec3 v_surfaceToLight;
-varying vec3 v_surfaceToView;
-
-uniform sampler2D diffuseSampler;
-uniform sampler2D depthSampler;
-uniform samplerCube cubeSampler;
-
-uniform vec4 specular;
-uniform sampler2D bumpSampler;
-uniform float shininess;
-uniform float specularFactor;
-uniform vec2 screenToRT;
-
-vec4 lit(float l ,float h, float m) {
-  return vec4(1.0,
-              max(l, 0.0),
-              (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
-              1.0);
-}
-
-float unpack_depth(const in vec4 rgba_depth)
-{
-    const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
-    float depth = dot(rgba_depth, bit_shift);
-    return depth;
-}
-
-void main() {
-/*  vec3 normal=texture2D(diffuseSampler, v_texCoord).xyz;
-  normal=normal+texture2D(diffuseSampler, vec2(v_texCoord.y,v_texCoord.x)).xyz;
-  normal=normalize(normal);
-  vec4 ref = textureCube(cubeSampler, reflect(v_surfaceToView*-1.0,normal));
-  vec4 samp=texture2D(diffuseSampler, v_texCoord);
-  vec2 mapCoord=gl_FragCoord.xy*screenToRT;
-  float brightness=ref.r;
-  gl_FragColor = (vec4(0,0,samp.b*0.5,1.0)*0.25)+(ref*0.75);
-  float depth=unpack_depth(texture2D(depthSampler,mapCoord));
-  float waterDepth=v_position.z/500.0;
-  gl_FragColor.a=min(min(abs(depth-waterDepth)*1024.0,1.0),v_position.z);
-*/
-
-  vec3 normal=texture2D(diffuseSampler, v_texCoord).xyz-vec3(0.5);
-  normal=normalize((normal*0.4)+v_normal);
-  vec4 ref = textureCube(cubeSampler, reflect(v_surfaceToView*-1.0,normal));
-  
-  
-  vec2 mapCoord=gl_FragCoord.xy;
-  
-  mapCoord*=screenToRT;
-  
-  float depth=unpack_depth(texture2D(depthSampler,mapCoord));
-  float waterDepth=v_position.z/500.0;
-  ref.a=min(min(abs(depth-waterDepth)*100.0,1.0),v_position.z);
-  
-  ref.a-=(normal.y*0.1);
-  
-  gl_FragColor = ref;
-  
-  
-}
-
-
-SCRIPT='defShadowVertexShader';
-
-
-uniform mat4 lightMatrix;
-uniform mat4 orthoWorldViewProjection;
-uniform mat4 world;
-uniform mat4 view;
-uniform mat4 frustumFarCorners;
-uniform mat4 cameraMatrix;
-attribute vec4 position;
-attribute vec2 texCoord;
-varying vec4 v_position;
-varying vec2 v_texCoord;
-
-varying vec4 v_camRay;
-
-varying vec3 v_lightPos;
-
-void main() {
-  v_texCoord = texCoord;
-  if(v_texCoord[0]>0.5){
-    if(v_texCoord[1]>0.5){
-        v_camRay=frustumFarCorners[0];
-    }else{
-        v_camRay=frustumFarCorners[1];
-    }
-  }else{
-    if(v_texCoord[1]>0.5){
-        v_camRay=frustumFarCorners[2];
-    }else{
-        v_camRay=frustumFarCorners[3];
-    }
-  }
-  v_camRay -= cameraMatrix[3];
-  v_position = (orthoWorldViewProjection * position);
-  gl_Position = v_position;
-  
-// float x=(v_texCoord.x*2.0)-1.0;
-// float y=((1.0-v_texCoord.y)*2.0)-1.0;
-    v_lightPos=lightMatrix[3].xyz;
-}
-
-SCRIPT='defShadowFragmentShader';
-
-
-#ifdef GL_ES
-precision highp float;
-#endif
-varying vec4 v_position;
-varying vec3 v_lightPos;
-varying vec4 v_camRay;
-varying vec2 v_texCoord;
-
-uniform vec3 viewVolume;
-uniform mat4 orthoViewInverse;
-uniform mat4 orthoProjectionInverse;
-
-uniform mat4 world;
-uniform mat4 view;
-uniform mat4 cameraMatrix;
-
-uniform mat4 lightMatrix;
-uniform mat4 modelMatrix;
-uniform mat4 viewInverse;
-uniform mat4 projectionInverse;
-uniform mat4 worldInverseTranspose;
-uniform mat4 viewProjectionInverse;
-uniform mat4 worldViewProjectionInverse;
-
-uniform sampler2D diffuseSampler;
-uniform sampler2D depthSampler;
-uniform sampler2D shadowSampler;
-
-const   float   dlt=(1.0/2048.0);//4096.0);//(1.0/1024.0);  //Size of RTT texel
-float unpack_depth(const in vec4 rgba_depth)
-{
-    const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
-    float depth = dot(rgba_depth, bit_shift);
-    return depth;
-}
-
-void doShadowTap(float surfToLight,vec2   lightMapUV,vec2   sampleOffset,float  scale){
-    float   Ldepth=unpack_depth(texture2D(shadowSampler, lightMapUV+sampleOffset))*50.0;//viewVolume.z;
-    if(Ldepth-surfToLight<-0.001)
-       gl_FragColor.xyz*=scale;
-}
-
-float sampleShadowFiltered(float surfToLight,vec2   lightMapUV,vec2   sampleOffset){
-    float   volDepth=50.0;
-    float   l0=unpack_depth(texture2D(shadowSampler, lightMapUV))*volDepth;
-    float   l1=unpack_depth(texture2D(shadowSampler, lightMapUV+vec2(sampleOffset.x,0)))*volDepth;
-    float   l2=unpack_depth(texture2D(shadowSampler, lightMapUV+vec2(0,sampleOffset.y)))*volDepth;
-    float   l3=unpack_depth(texture2D(shadowSampler, lightMapUV+vec2(sampleOffset.x,sampleOffset.y)))*volDepth;
-
-    l0=(l0-surfToLight<-0.001)?0.0:1.0;
-    l1=(l1-surfToLight<-0.001)?0.0:1.0;
-    l2=(l2-surfToLight<-0.001)?0.0:1.0;
-    l3=(l3-surfToLight<-0.001)?0.0:1.0;
-    float fx=fract(lightMapUV.x);
-    float fy=fract(lightMapUV.y);
-    
-    //return l0;
-    return  (((l0*(1.0-fx))+(l1*fx))*(1.0-fy))+
+            }
+
+            html, body {
+                width: 100%;
+                height: 100%;
+                border: 0px;
+                padding: 0px;
+                margin: 0px;
+                background-color: black;
+                font-family: sans-serif;
+                overflow: hidden;
+                color: #fff;
+            }
+
+            a {
+                color: #fff;
+            }
+
+            video {
+                display: no4ne;
+            }
+
+            CANVAS {
+                background-color: black;
+            }
+
+            .uiTitle {
+
+                position: absolute;
+                top:0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 512px;
+                height: 175px;
+
+                margin: auto;
+
+                z-index: 2;
+                background-color: rgba(0,0,0,0.25);
+                border-radius: 6px;
+                padding: 4px;
+                color: yellow;
+
+                text-align: center
+
+            }
+            .uiElem {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                z-index: 2;
+                color: yellow;
+                font-family: sans-serif;
+                font-size: small;
+                background-color: rgba(0,0,0,0.5);
+                border-radius: 6px;
+                padding: 4px;
+            }
+
+            #viewContainer {
+                width: 100%;
+                height: 100%;
+            }
+
+        </style>
+        <script type="text/javascript" src="scripts/tdl/base.js"></script>
+        <script src="node_modules\socket.io\node_modules\socket.io-client\dist\socket.io.js"></script>
+        <script type="text/javascript" src="scripts/meshes/oh6.js"></script>
+        <script type="text/javascript" src="scripts/meshes/terrain.js"></script>
+        <script type="text/javascript" src="scripts/meshes/path.js"></script>
+        <script type="text/javascript" src="scripts/meshes/sandrail.js"></script>
+        <script type="text/javascript" src="scripts/meshes/ptboat.js"></script>
+        <script type="text/javascript" src="scripts/meshes/hellcat.js"></script>
+        <script type="text/javascript" src="scripts/meshes/ralien.js"></script>
+        <script type="text/javascript" src="scripts/meshes/billboard.js"></script>
+        <script type="text/javascript" src="scripts/meshes/hudText.js"></script>
+        <script type="text/javascript" src="scripts/meshes/fsQuad.js"></script>
+        <script type="text/javascript" src="scripts/meshes/waterPlane.js"></script>
+        <script type="text/javascript" src="scripts/meshes/borg.js"></script>
+
+        <script type="text/javascript" src="scripts/util.js"></script>
+        <script type="text/javascript" src="scripts/audio.js"></script>
+        <script type="text/javascript" src="scripts/rendering.js"></script>
+        <script type="text/javascript" src="scripts/simulation.js"></script>
+
+        <script type="text/javascript" src="scripts/meshes/objectDefs.js"></script>
+        <script type="text/javascript" src="scripts/globals.js"></script>
+        <script type="text/javascript" src="scripts/world.js"></script>
+        <script type="text/javascript" src="scripts/fixtures.js"></script>
+    </head>
+
+    <body onbeforeunload="worldClosed();" oncontextmenu="return false;" style="cursor: crosshair">
+
+        <!--div id="info"><a href="http://threedlibrary.googlecode.com" target="_blank">tdl.js</a> - example</div-->
+
+        <video id="video" autoplay controls style="display:none" width="512" height="512">
+            <source src="assets/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'> 
+            <!--video id="video" autoplay loop style="display:none" controls="controls">
+            your browser does not support the video tag--> 
+        </video>
+
+        <div id="viewContainer">
+
+            <div class="uiElem" id="fpsContainer">
+                <div class="fps"><span id="fps"></span></div>
+            </div>
+
+
+            <div class="uiElem" id="helpText" style="top: 40px; left: 10px;">
+                <div class="help">
+                    AWSD - Flight Thrust, Yaw<br/>
+                    ARROW KEYS - Flight Pitch, Roll<br/>
+                    Q - Switch camera mode:
+                    <select id='cameraMode' class='uiElem' style='position:relative' onchange='setCameraMode(selectedIndex);blur();'>
+                        <option>3rd person</option>
+                        <option>Free</option>
+                        <option>Follow path</option>
+                    </select>
+                    <br/>
+                    E - Switch camera target:
+                    <select id='cameraTarget' class='uiElem' style='position:relative' onchange='selectCameraTarget(selectedIndex);blur();' >
+                    </select>
+                    <br/>
+                    G - Graphics quality: 
+                    <select id='graphicsQuality'  class='uiElem' style='position:relative' onchange='g_graphicsQuality=selectedIndex;blur();'>
+                        <option>Single Pass</option>
+                        <option>Multipass!</option>
+                        <option>gnar pthnagn</option>
+                    </select>
+                    <br/>
+                    Sound:
+                    <select id='soundVolume'  class='uiElem' style='position:relative' onchange='g_audioLevel=0.2*selectedIndex;audio.globalVolume(g_audioLevel);blur();'>
+                        <option>0 - Off</option>
+                        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+                    </select>
+                    <br/>
+                    Bodies:
+                    <select id='showBodies'  class='uiElem' style='position:relative' onchange='g_renderDebugBodies=(selectedIndex==0)?false:true;blur();'>
+                        <option>Hide</option>
+                        <option>Show</option>
+                    </select>
+                    <br/>
+                    <br/>
+                    <br/>
+                    F11 - Full Screen - (Chrome)<br/>
+                    H - Toggle Help<br/>
+                </div>
+                <br/>
+                <br/>
+                <button class='uiElem' onclick="this.parentElement.style.visibility = 'hidden';blur();" style='position:relative' >close</button>
+                <br/>
+                <select class='uiElem' id='scriptMenu' style='position:relative'><option>test</option></select>
+                <br/>
+                <br/>
+                Incoming Chat:&nbsp;<ul id="incomingChatMessages"></ul>
+                <input type="text" id="outgoingChatMessage">
+
+
+                <a id="debugText">
+                    debug text
+                </a>
+                
+                <div class="uiElem" id="playerList" style="position: relative; float: bottom;">
+                    players:
+                </div>
+                <!--text class='uiElem' id='scriptText'>script text</text-->
+            </div>
+
+
+            <!-- VIDEO STREAMING -->
+            <div class="uiElem" id="userVideo" style="top: 40px; left: 300px; float: right;">
+                <h1>
+                </h1>
+                local video:
+                <video autoplay id="sourcevid" width="128" style="display:none" height="100"></video>
+
+                <img src="" id="frame" style="width:128px;height:96px"/>
+
+                <canvas id="output" style="width:128px;height:96px"></canvas>
+                <canvas id="dynamicCanvas" style="width:512px;height:512px" width=512 height=512></canvas>
+                <div id="log"></div>
+            </div>
+            <script type="text/javascript" src="scripts/video.js"></script>
+
+            <div class="uiTitle" id="titleDiv" style="top: 40px; left: 10px;">
+                <img src="assets/title0001.png"/>
+                <br/>
+                <a>P to Resume..<br/>AWSD + Arrow Keys to Fly..<br/>Space - Grapple nearest..<br/>E - Change Vehicle<br/>R - Rescusitate</a>
+            </div>
+            <canvas id="canvas" width="1024" height="768" style="width: 100%; height: 100%;"></canvas>
+        </div>
+
+
+        <!--iframe id="shaderIFrame" onload="console.log('Frame Loaded');" src="shaders.html">
+        </iframe>
+        <script type="text/javascript">
+        
+        </script-->
+        <script id='shaderScript' type="text/glsl">
+
+            SCRIPT='chopperVertexShader';
+
+            uniform mat4 worldViewProjection;
+            uniform mat4 lightMatrix;
+            uniform vec3 rotorSpins;
+            uniform mat4 world;
+            uniform mat4 viewInverse;
+            uniform mat4 worldInverseTranspose;
+            attribute vec4 position;
+            attribute vec3 normal;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+
+            void main() {
+            v_texCoord = texCoord;
+            v_position = position;
+            vec3 vp0=vec3(0.458,-0.004,0.69);
+            vec3 vp1=vec3(-2.673,-0.004,0.019);
+            if(v_texCoord.y<-2.0){
+            mat3 spinMat=mat3(sin(rotorSpins.x),0.0,cos(rotorSpins.x),0.0,1.0,0.0,-cos(rotorSpins.x),0.0,sin(rotorSpins.x));
+            v_position.xyz = ((v_position.xyz-vp1)*spinMat)+vp1;
+            }  
+            else if(v_texCoord.y<-1.0){
+            mat3 spinMat=mat3(sin(rotorSpins.x),cos(rotorSpins.x),0.0,-cos(rotorSpins.x),sin(rotorSpins.x),0.0,0.0,0.0,1.0);
+            v_position.xyz = ((v_position.xyz-vp0)*spinMat)+vp0;
+            }  
+
+            v_position = (worldViewProjection * v_position);
+
+            v_refCoord = position.xyz;
+            v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
+            v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
+            v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
+
+            gl_Position = v_position;
+            }
+
+            SCRIPT='chopperFragmentShader';
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            uniform vec4 lightColor;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+
+            uniform sampler2D diffuseSampler;
+            uniform samplerCube cubeSampler;
+            uniform vec4 specular;
+            uniform sampler2D bumpSampler;
+            uniform float shininess;
+            uniform float specularFactor;
+
+            vec4 lit(float l ,float h, float m) {
+            return vec4(1.0,
+            max(l, 0.0),
+            (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
+            1.0);
+            }
+            void main() {
+            vec4 bg = textureCube(cubeSampler, v_surfaceToView*-1.0);
+            vec4 ref = textureCube(cubeSampler, reflect(v_surfaceToView*-1.0,v_normal));
+            vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
+            vec3 normal = normalize(v_normal);
+            vec3 surfaceToLight = normalize(v_surfaceToLight);
+            vec3 surfaceToView = normalize(v_surfaceToView);
+            vec3 halfVector = normalize(surfaceToLight + surfaceToView);
+            float vl=length(v_surfaceToView);
+            vec3 skycolor=vec3(0);
+
+            float shine=shininess;
+            vec4 litR = lit(dot(normal, surfaceToLight), dot(normal, halfVector), shine);
+            if( v_texCoord.x<1.0){
+            if( v_texCoord.y<-1.0){
+            ////diffuse=vec4(1,0,0,0);////(diffuse*0.75)+(ref*0.25);
+            ////shine=0.1;
+            ////litR.y=1.0;
+            ////litR.z=0.0;
+            }else{
+            litR.z*=0.5;
+            }
+            diffuse=vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
+            }else{
+            diffuse=vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
+            diffuse=(diffuse*0.5)+(ref*0.25)+(bg*0.25);
+            }
+            gl_FragColor = diffuse;
+            gl_FragColor.rgb = max(gl_FragColor.rgb,skycolor.rgb);
+            }
+
+            SCRIPT='sphereVertexShader';
+
+            uniform mat4 worldViewProjection;
+            uniform mat4 lightMatrix;
+            uniform mat4 world;
+            uniform mat4 viewInverse;
+            uniform mat4 worldInverseTranspose;
+            uniform float   scale;
+            attribute vec4 position;
+            attribute vec3 normal;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+            void main() {
+            v_texCoord = texCoord;
+            vec4  vpos=vec4(position.xyz*scale,1.0);
+            v_position = (worldViewProjection * vpos);
+            v_refCoord = position.xyz;
+            v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
+            v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
+            v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
+            gl_Position = v_position;
+            }
+
+            SCRIPT='sphereFragmentShader';
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            uniform vec4 lightColor;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+
+            uniform sampler2D diffuseSampler;
+            uniform samplerCube cubeSampler;
+            uniform vec4 specular;
+            uniform sampler2D bumpSampler;
+            uniform float shininess;
+            uniform float specularFactor;
+
+            vec4 lit(float l ,float h, float m) {
+            return vec4(1.0,
+            max(l, 0.0),
+            (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
+            1.0);
+            }
+            void main() {
+            vec4 bg = textureCube(cubeSampler, v_surfaceToView*-1.0);
+            vec4 ref = textureCube(cubeSampler, reflect(v_surfaceToView*-1.0,v_normal));
+            vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
+            vec3 normal = normalize(v_normal);
+            vec3 surfaceToLight = normalize(v_surfaceToLight);
+            vec3 surfaceToView = normalize(v_surfaceToView);
+            vec3 halfVector = normalize(surfaceToLight + surfaceToView);
+            vec4 litR = lit(dot(normal, surfaceToLight), dot(normal, halfVector), shininess);
+            float vl=length(v_surfaceToView);
+            vec3 skycolor=vec3(0);
+            if(vl>200.0){
+            vl=min(100.0,(vl-200.0))/100.0;
+
+            diffuse.rgb*=1.0-vl;
+            ////skycolor = textureCube(cubeSampler, v_refCoord).rgb*vl;
+            }
+
+            gl_FragColor = (ref+bg)*0.5;////vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
+            gl_FragColor.rgb = max(gl_FragColor.rgb,skycolor.rgb);
+            gl_FragColor.a=abs(normal.z);
+            }
+
+            SCRIPT='terrainVertexShader';
+
+            uniform mat4 worldViewProjection;
+            uniform mat4 lightMatrix;
+            uniform mat4 world;
+            uniform mat4 viewInverse;
+            uniform mat4 worldInverseTranspose;
+            attribute vec4 position;
+            attribute vec3 normal;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+            void main() {
+            v_texCoord = texCoord;
+            v_position = (worldViewProjection * position);
+
+
+            v_refCoord = position.xyz;
+            v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
+            v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
+            v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
+            gl_Position = v_position;
+            }
+
+            SCRIPT='terrainFragmentShader';
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+
+            uniform vec4 lightColor;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+
+
+            uniform sampler2D 	dirtSampler;
+            uniform sampler2D 	grassSampler;
+            uniform sampler2D 	stoneSampler;
+            uniform sampler2D 	mixmapSampler;
+
+            uniform sampler2D 	diffuseSampler;
+            uniform sampler2D 	detailSampler;
+            uniform sampler2D 	bumpSampler;
+            uniform samplerCube cubeSampler;
+            uniform vec4 		specular;
+            uniform float 		shininess;
+            uniform float 		specularFactor;
+
+            vec4 lit(float l ,float h, float m) {
+            return vec4(1.0,
+            max(l, 0.0),
+            (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
+            1.0);
+            }
+            void main() {
+            vec2 detailTexCoord=v_texCoord*32.0;
+            vec4 mix=texture2D(mixmapSampler,v_texCoord);
+            mix.z=0.01;
+            float sum=mix.x+mix.y+mix.z;
+            mix/=sum;
+            vec4 tex=(texture2D(stoneSampler,detailTexCoord)*mix.y)+
+            (texture2D(grassSampler,detailTexCoord)*mix.x)+
+            (texture2D(dirtSampler,detailTexCoord)*mix.z);
+            tex.a=1.0;
+            gl_FragColor=tex;
+            }
+
+            void tmain() {
+            vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
+            //// vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
+            vec3 normal = normalize(v_normal);
+            vec3 surfaceToLight = normalize(v_surfaceToLight);
+            vec3 surfaceToView = normalize(v_surfaceToView);
+            vec3 halfVector = normalize(surfaceToLight + surfaceToView);
+            vec4 litR = lit(dot(normal, surfaceToLight),
+            dot(normal, halfVector), shininess);
+            float vl=length(v_surfaceToView);
+            vec3 skycolor=vec3(0);
+            float fogstart=150.0;
+            float detailstart=100.0;
+
+            ////diffuse.r*=(gl_PrimitiveID&3);
+
+            if(vl>fogstart){
+            vl=min(fogstart,(vl-fogstart))/fogstart;
+
+            diffuse.rgb*=1.0-vl;
+            skycolor = textureCube(cubeSampler, v_refCoord).rgb*vl;
+            diffuse.rgb=max(diffuse.rgb,skycolor.rgb);
+            ////diffuse += texture2D(diffuseSampler, v_texCoord*10.0)*(1.0-vl);
+            }else if(vl<detailstart){
+            vl=1.0-(vl/detailstart);
+            vec4 detail =texture2D(detailSampler, vec2(v_texCoord*8.0));
+            vec4 detail2=texture2D(detailSampler, vec2(v_texCoord.y*7.0,v_texCoord.x*-7.0));
+            vec4 detail3=texture2D(detailSampler, vec2(v_texCoord.y*3.0,v_texCoord.x*3.0));
+            detail=(((detail+detail2+detail3)*0.33)+vec4(0.5));
+            if(detail.x>1.25){
+            detail.x-=1.25;////(diffuse*(1.0-vl))
+            diffuse=diffuse+((vec4(detail.x*32.0)*vl)*detail3);////((diffuse.x+diffuse.y+diffuse.z)/vl
+
+            }
+            ////else diffuse=(diffuse+detail);////((diffuse.x+diffuse.y+diffuse.z)/vl
+            ////diffuse=max(max(diffuse,detail),detail2;
+            ////diffuse=max(diffuse,detail);
+            }
+            ////gl_FragColor = vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
+            gl_FragColor = diffuse;
+            }
+
+            SCRIPT='texVertexShader';
+
+
+            uniform mat4 worldViewProjection;
+            uniform mat4 world;
+            uniform mat4 viewInverse;
+            uniform mat4 worldInverseTranspose;
+            attribute vec4 position;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            void main() {
+            v_texCoord = texCoord;
+            v_position = (worldViewProjection * position);
+            gl_Position = v_position;
+            }
+
+            SCRIPT='texFragmentShader';
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            uniform sampler2D diffuseSampler;
+            void main() {gl_FragColor = texture2D(diffuseSampler, v_texCoord);}
+
+
+            SCRIPT='skyVertexShader';
+
+            uniform mat4 worldViewProjection;
+            uniform mat4 world;
+            uniform mat4 viewInverse;
+            uniform mat4 worldInverseTranspose;
+            attribute vec4 position;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec3 v_refCoord;
+            void main() {
+            v_position = (worldViewProjection * position);
+            vec4 vp=vec4(position.xyz,0);
+            vp=(worldViewProjection * vp);
+            v_refCoord = position.xyz;
+            gl_Position = v_position;
+            }
+
+            SCRIPT='skyFragmentShader';
+
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            varying vec4 v_position;
+            varying vec3 v_refCoord;
+            uniform samplerCube cubeSampler;
+            void main() {
+            gl_FragColor = textureCube(cubeSampler,  v_refCoord);
+
+            ////Anaglyph
+            /*
+            vec3 offset=vec3(0.01,0,0)*v_position.z;
+            vec4 color=textureCube(cubeSampler,  v_refCoord+offset);
+            vec4 color2=textureCube(cubeSampler, v_refCoord-offset);
+            color=vec4(color.g*0.7+color.b*0.3,color2.g,color2.b,0);
+            ////color=vec4(0,color2.g,color2.b,0);
+            gl_FragColor = color;
+            */
+            }
+
+            SCRIPT='ralienVertexShader';
+
+
+            uniform mat4 worldViewProjection;
+            uniform mat4 lightMatrix;
+            uniform mat4 world;
+            uniform mat4 viewInverse;
+            uniform mat4 worldInverseTranspose;
+            attribute vec4 position;
+            attribute vec3 normal;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+            void main() {
+            v_texCoord = texCoord;
+            v_position = (worldViewProjection * position);
+            v_refCoord = position.xyz;
+            v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
+            v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
+            v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
+            gl_Position = v_position;
+            }
+
+
+            SCRIPT='ralienFragmentShader';
+
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+
+            uniform vec4 lightColor;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+
+            uniform sampler2D diffuseSampler;
+            uniform sampler2D detailSampler;
+            uniform samplerCube cubeSampler;
+
+            uniform vec4 specular;
+            uniform sampler2D bumpSampler;
+            uniform float shininess;
+            uniform float specularFactor;
+
+            vec4 lit(float l ,float h, float m) {
+            return vec4(1.0,
+            max(l, 0.0),
+            (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
+            1.0);
+            }
+            void main() {
+            vec4 diffuse = texture2D(diffuseSampler, v_texCoord);
+            vec3 normal = normalize(v_normal);
+            vec3 surfaceToLight = normalize(v_surfaceToLight);
+            vec3 surfaceToView = normalize(v_surfaceToView);
+            vec3 halfVector = normalize(surfaceToLight + surfaceToView);
+            vec4 litR = lit(dot(normal, surfaceToLight),
+            dot(normal, halfVector), shininess);
+            float vl=length(v_surfaceToView);
+            gl_FragColor = vec4((lightColor * (diffuse * litR.y + specular * litR.z * specularFactor)).rgb,diffuse.a);
+            }
+
+            SCRIPT='billboardVertexShader';
+
+
+            uniform mat4 worldViewProjection;
+            attribute vec4 position;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            void main() {
+            v_texCoord = vec2(texCoord.x,texCoord.y);
+            v_position = (worldViewProjection * position);
+            gl_Position = v_position;
+            }
+
+            SCRIPT='billboardFragmentShader';
+
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            varying vec2 v_texCoord;
+            uniform sampler2D diffuseSampler;
+            void main() {
+            gl_FragColor = texture2D(diffuseSampler, v_texCoord);////+texture2D(depthSampler, v_texCoord);
+
+            }
+
+            SCRIPT='depthOnlyVertexShader';
+
+            uniform mat4 worldViewProjection;
+            attribute vec4 position;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            void main() {
+            v_texCoord = vec2(texCoord.x,texCoord.y);
+            v_position = (worldViewProjection * position);
+            gl_Position = v_position;
+            }
+
+            SCRIPT='depthOnlyFragmentShader';
+
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            varying vec2 v_texCoord;
+            varying vec4 v_position;
+            uniform sampler2D diffuseSampler;
+
+            uniform vec3   viewVolume;
+
+            #define DEBUG_PACKING 0
+            const float toFixed = 255.0/256.0;
+
+            vec4 FloatToFixed(float depth)
+            {
+            #if DEBUG_PACKING
+            return vec4( depth, depth,depth,1.0);
+            #else
+            return vec4( 
+            fract(depth*toFixed*1.0),
+            fract(depth*toFixed*255.0),
+            fract(depth*toFixed*255.0*255.0),
+            fract(depth*toFixed*255.0*255.0*255.0)
+            );
+            #endif
+            }
+
+
+            vec4 pack_depth(const in float depth)
+            {
+            const vec4 bit_shift = vec4(256.0*256.0*256.0, 256.0*256.0, 256.0, 1.0);
+            const vec4 bit_mask  = vec4(0.0, 1.0/256.0, 1.0/256.0, 1.0/256.0);
+            vec4 res = fract(depth * bit_shift);
+            res -= res.xxyz * bit_mask;
+            return res;
+            }
+
+
+            void main() {
+            float nmldepth=v_position.z/viewVolume.z;//FAR_Z;//gl_FragCoord.z/viewVolume.z;//
+
+            gl_FragData[0] = pack_depth(nmldepth);
+            }
+
+            SCRIPT='DOFXPassVertexShader';
+
+
+            uniform mat4 orthoWorldViewProjection;
+            attribute vec4 position;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            void main() {
+            v_texCoord = vec2(texCoord.x,texCoord.y);
+            v_position = (orthoWorldViewProjection * position);
+            gl_Position = v_position;
+            }
+
+
+            SCRIPT='DOFXPassFragmentShader';
+
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            varying vec2 v_texCoord;
+            uniform sampler2D depthSampler;
+            uniform sampler2D diffuseSampler;
+            uniform sampler2D shadowSampler;
+            const float fromFixed = 256.0/255.0;
+            #define DEBUG_PACKING 0
+            float FixedToFloat(vec4 shadowSample)
+            {
+            #if DEBUG_PACKING
+            return shadowSample.r;
+            #else
+            return shadowSample.r*fromFixed/(1.0) +
+            shadowSample.g*fromFixed/(255.0) +
+            shadowSample.b*fromFixed/(255.0*255.0) +
+            shadowSample.a*fromFixed/(255.0*255.0*255.0);    
+            #endif
+            }
+
+            float unpack_depth(const in vec4 rgba_depth)
+            {
+            const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
+            float depth = dot(rgba_depth, bit_shift);
+            return depth;
+            }
+            const float focalDepth=0.05;
+            void main() {
+            float depth=unpack_depth(texture2D(depthSampler, v_texCoord));
+            ////float depth=FixedToFloat(texture2D(depthSampler, v_texCoord));
+            depth=((depth-focalDepth)*2.0);
+            float blurSize = depth/512.0;////512.0; //// I've chosen this size because this will result in that every step will be one pixel wide if the RTScene texture is of size 512x512
+            vec4 sum = vec4(0.0);
+            sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 4.0*blurSize, v_texCoord.y)) * 0.05;
+            sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 3.0*blurSize, v_texCoord.y)) * 0.09;
+            sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 2.0*blurSize, v_texCoord.y)) * 0.12;
+            sum += texture2D(diffuseSampler, vec2(v_texCoord.x - blurSize, v_texCoord.y)) 	* 0.15;
+            sum += texture2D(diffuseSampler, vec2(v_texCoord.x, v_texCoord.y)) 				* 0.18;
+            sum += texture2D(diffuseSampler, vec2(v_texCoord.x + blurSize, v_texCoord.y)) 	* 0.15;
+            sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 2.0*blurSize, v_texCoord.y)) * 0.12;
+            sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 3.0*blurSize, v_texCoord.y)) * 0.09;
+            sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 4.0*blurSize, v_texCoord.y)) * 0.05;
+            gl_FragColor = vec4(sum.rgb,depth);
+            }
+
+            SCRIPT='DOFYPassVertexShader';
+
+
+            uniform mat4 orthoWorldViewProjection;
+            attribute vec4 position;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            void main() {
+            v_texCoord = vec2(texCoord.x,texCoord.y);
+            v_position = (orthoWorldViewProjection * position);
+            gl_Position = v_position;
+            }
+
+            SCRIPT='DOFYPassFragmentShader';
+
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            varying vec2 v_texCoord;
+            uniform sampler2D depthSampler;
+            uniform sampler2D diffuseSampler;
+            uniform sampler2D shadowSampler;
+
+            const float focalDepth=0.05;
+            void main() {
+            vec4 c0 = texture2D(depthSampler, v_texCoord);
+            float depth=c0.a;
+            depth=((depth-focalDepth)*2.0);
+            float blurSize = depth/512.0;
+            vec4 sum = vec4(0.0);
+            sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y- 4.0*blurSize)) * 0.05;
+            sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y- 3.0*blurSize)) * 0.09;
+            sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y- 2.0*blurSize)) * 0.12;
+            sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y- blurSize	  )) * 0.15;
+            sum += c0																			 * 0.18;
+            sum += texture2D(depthSampler, vec2(v_texCoord.x ,	v_texCoord.y+ blurSize    )) * 0.15;
+            sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y+ 2.0*blurSize)) * 0.12;
+            sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y+ 3.0*blurSize)) * 0.09;
+            sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y+ 4.0*blurSize)) * 0.05;
+            gl_FragColor = vec4(sum.rgb,1.0);////sum;
+            }
+
+            SCRIPT='convPassVertexShader';
+
+
+            uniform mat4 worldViewProjection;
+            attribute vec4 position;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            void main() {
+            v_texCoord = vec2(texCoord.x,texCoord.y);  
+            v_position = (worldViewProjection * position);
+            gl_Position = v_position;
+            }
+
+            SCRIPT='convFragmentShader';
+
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            varying vec2 v_texCoord;
+            uniform sampler2D depthSampler;
+            uniform sampler2D diffuseSampler;
+            float kernal[9]=[0.05,0.09,0.12,0.15,0.18,0.15,0.12,0.09,0.05];
+            void main() {
+            vec4 sum = vec4(0.0);
+            vec4 c0 = texture2D(depthSampler, v_texCoord);
+            float blurSize = c0.a/1024.0;
+            for(int i=0;i<9;i++)
+            sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y-((i-4)*blurSize))) * 0.05;
+            gl_FragColor = vec4(sum.rgb,1.0);
+            }
+
+            SCRIPT='waterVertexShader';
+
+
+            uniform mat4 worldViewProjection;
+            uniform mat4 lightMatrix;
+            uniform mat4 world;
+            uniform mat4 viewInverse;
+            uniform mat4 worldInverseTranspose;
+            uniform vec3 timers;
+            attribute vec4 position;
+            attribute vec3 normal;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+            void main() {
+            v_texCoord = texCoord*8.0;
+            v_texCoord+=vec2(timers.x*0.01,(timers.x+0.3)*0.0016);
+            v_position = (worldViewProjection * position);
+            v_refCoord = position.xyz;
+            v_normal = (worldInverseTranspose * vec4(normal, 0)).xyz;
+            v_surfaceToLight = lightMatrix[3].xyz - (world * position).xyz;
+            v_surfaceToView = (viewInverse[3] - (world * position)).xyz;
+
+            gl_Position = v_position;
+            }
+
+            SCRIPT='waterFragmentShader';
+
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+
+            uniform vec4 lightColor;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+            varying vec3 v_refCoord;
+            varying vec3 v_normal;
+            varying vec3 v_surfaceToLight;
+            varying vec3 v_surfaceToView;
+
+            uniform sampler2D diffuseSampler;
+            uniform sampler2D depthSampler;
+            uniform samplerCube cubeSampler;
+
+            uniform vec4 specular;
+            uniform sampler2D bumpSampler;
+            uniform float shininess;
+            uniform float specularFactor;
+            uniform vec2 screenToRT;
+
+            vec4 lit(float l ,float h, float m) {
+            return vec4(1.0,
+            max(l, 0.0),
+            (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
+            1.0);
+            }
+
+            float unpack_depth(const in vec4 rgba_depth)
+            {
+            const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
+            float depth = dot(rgba_depth, bit_shift);
+            return depth;
+            }
+
+            void main() {
+            /*  vec3 normal=texture2D(diffuseSampler, v_texCoord).xyz;
+            normal=normal+texture2D(diffuseSampler, vec2(v_texCoord.y,v_texCoord.x)).xyz;
+            normal=normalize(normal);
+            vec4 ref = textureCube(cubeSampler, reflect(v_surfaceToView*-1.0,normal));
+            vec4 samp=texture2D(diffuseSampler, v_texCoord);
+            vec2 mapCoord=gl_FragCoord.xy*screenToRT;
+            float brightness=ref.r;
+            gl_FragColor = (vec4(0,0,samp.b*0.5,1.0)*0.25)+(ref*0.75);
+            float depth=unpack_depth(texture2D(depthSampler,mapCoord));
+            float waterDepth=v_position.z/500.0;
+            gl_FragColor.a=min(min(abs(depth-waterDepth)*1024.0,1.0),v_position.z);
+            */
+
+            vec3 normal=texture2D(diffuseSampler, v_texCoord).xyz-vec3(0.5);
+            normal=normalize((normal*0.4)+v_normal);
+            vec4 ref = textureCube(cubeSampler, reflect(v_surfaceToView*-1.0,normal));
+
+
+            vec2 mapCoord=gl_FragCoord.xy;
+
+            mapCoord*=screenToRT;
+
+            float depth=unpack_depth(texture2D(depthSampler,mapCoord));
+            float waterDepth=v_position.z/500.0;
+            ref.a=min(min(abs(depth-waterDepth)*100.0,1.0),v_position.z);
+
+            ref.a-=(normal.y*0.1);
+
+            gl_FragColor = ref;
+
+
+            }
+
+
+            SCRIPT='defShadowVertexShader';
+
+
+            uniform mat4 lightMatrix;
+            uniform mat4 orthoWorldViewProjection;
+            uniform mat4 world;
+            uniform mat4 view;
+            uniform mat4 frustumFarCorners;
+            uniform mat4 cameraMatrix;
+            attribute vec4 position;
+            attribute vec2 texCoord;
+            varying vec4 v_position;
+            varying vec2 v_texCoord;
+
+            varying vec4 v_camRay;
+
+            varying vec3 v_lightPos;
+
+            void main() {
+            v_texCoord = texCoord;
+            if(v_texCoord[0]>0.5){
+            if(v_texCoord[1]>0.5){
+            v_camRay=frustumFarCorners[0];
+            }else{
+            v_camRay=frustumFarCorners[1];
+            }
+            }else{
+            if(v_texCoord[1]>0.5){
+            v_camRay=frustumFarCorners[2];
+            }else{
+            v_camRay=frustumFarCorners[3];
+            }
+            }
+            v_camRay -= cameraMatrix[3];
+            v_position = (orthoWorldViewProjection * position);
+            gl_Position = v_position;
+
+            // float x=(v_texCoord.x*2.0)-1.0;
+            // float y=((1.0-v_texCoord.y)*2.0)-1.0;
+            v_lightPos=lightMatrix[3].xyz;
+            }
+
+            SCRIPT='defShadowFragmentShader';
+
+
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            varying vec4 v_position;
+            varying vec3 v_lightPos;
+            varying vec4 v_camRay;
+            varying vec2 v_texCoord;
+
+            uniform vec3 viewVolume;
+            uniform mat4 orthoViewInverse;
+            uniform mat4 orthoProjectionInverse;
+
+            uniform mat4 world;
+            uniform mat4 view;
+            uniform mat4 cameraMatrix;
+
+            uniform mat4 lightMatrix;
+            uniform mat4 modelMatrix;
+            uniform mat4 viewInverse;
+            uniform mat4 projectionInverse;
+            uniform mat4 worldInverseTranspose;
+            uniform mat4 viewProjectionInverse;
+            uniform mat4 worldViewProjectionInverse;
+
+            uniform sampler2D diffuseSampler;
+            uniform sampler2D depthSampler;
+            uniform sampler2D shadowSampler;
+
+            const   float   dlt=(1.0/2048.0);//4096.0);//(1.0/1024.0);  //Size of RTT texel
+            float unpack_depth(const in vec4 rgba_depth)
+            {
+            const vec4 bit_shift = vec4(1.0/(256.0*256.0*256.0), 1.0/(256.0*256.0), 1.0/256.0, 1.0);
+            float depth = dot(rgba_depth, bit_shift);
+            return depth;
+            }
+
+            void doShadowTap(float surfToLight,vec2   lightMapUV,vec2   sampleOffset,float  scale){
+            float   Ldepth=unpack_depth(texture2D(shadowSampler, lightMapUV+sampleOffset))*50.0;//viewVolume.z;
+            if(Ldepth-surfToLight<-0.001)
+            gl_FragColor.xyz*=scale;
+            }
+
+            float sampleShadowFiltered(float surfToLight,vec2   lightMapUV,vec2   sampleOffset){
+            float   volDepth=50.0;
+            float   l0=unpack_depth(texture2D(shadowSampler, lightMapUV))*volDepth;
+            float   l1=unpack_depth(texture2D(shadowSampler, lightMapUV+vec2(sampleOffset.x,0)))*volDepth;
+            float   l2=unpack_depth(texture2D(shadowSampler, lightMapUV+vec2(0,sampleOffset.y)))*volDepth;
+            float   l3=unpack_depth(texture2D(shadowSampler, lightMapUV+vec2(sampleOffset.x,sampleOffset.y)))*volDepth;
+
+            l0=(l0-surfToLight<-0.001)?0.0:1.0;
+            l1=(l1-surfToLight<-0.001)?0.0:1.0;
+            l2=(l2-surfToLight<-0.001)?0.0:1.0;
+            l3=(l3-surfToLight<-0.001)?0.0:1.0;
+            float fx=fract(lightMapUV.x);
+            float fy=fract(lightMapUV.y);
+
+            //return l0;
+            return  (((l0*(1.0-fx))+(l1*fx))*(1.0-fy))+
             (((l2*(1.0-fx))+(l3*fx))*fy);
-}
+            }
 
-vec4    getPixelWorld(vec2  texCoord)
-{
-    float depth=unpack_depth(texture2D(depthSampler, texCoord));
-    return (v_camRay*depth)+cameraMatrix[3];
-}
+            vec4    getPixelWorld(vec2  texCoord)
+            {
+            float depth=unpack_depth(texture2D(depthSampler, texCoord));
+            return (v_camRay*depth)+cameraMatrix[3];
+            }
 
-void computeShadowAtWorld(vec4 worldSpace){
+            void computeShadowAtWorld(vec4 worldSpace){
 
-    vec3    dLight=worldSpace.xyz-lightMatrix[3].xyz;
-    vec2    lightMapUV=vec2(dot(dLight,lightMatrix[0].xyz),dot(dLight,lightMatrix[1].xyz))+0.5;
+            vec3    dLight=worldSpace.xyz-lightMatrix[3].xyz;
+            vec2    lightMapUV=vec2(dot(dLight,lightMatrix[0].xyz),dot(dLight,lightMatrix[1].xyz))+0.5;
 
-    float   surfToLight=-dot(dLight,lightMatrix[2].xyz);
-    if(surfToLight>=0.0 && surfToLight<1.0&&
-        //if(dLight.y<100.0&&
-        lightMapUV.x>=dlt&&
-        lightMapUV.x<1.0-dlt&&
-        lightMapUV.y>=dlt&&
-        lightMapUV.y<1.0-dlt){
+            float   surfToLight=-dot(dLight,lightMatrix[2].xyz);
+            if(surfToLight>=0.0 && surfToLight<1.0&&
+            //if(dLight.y<100.0&&
+            lightMapUV.x>=dlt&&
+            lightMapUV.x<1.0-dlt&&
+            lightMapUV.y>=dlt&&
+            lightMapUV.y<1.0-dlt){
 
-        gl_FragColor.xyz*=(sampleShadowFiltered(surfToLight,lightMapUV,vec2(dlt,dlt))*0.75)+0.25;
+            gl_FragColor.xyz*=(sampleShadowFiltered(surfToLight,lightMapUV,vec2(dlt,dlt))*0.75)+0.25;
 
-//        for(float ty=-1.0;ty<1.99;ty+=1.0)
-//        for(float tx=-1.0;tx<1.99;tx+=1.0)
-//           doShadowTap(surfToLight,lightMapUV,vec2(dlt*tx,dlt*ty),0.90);//95);
+            //        for(float ty=-1.0;ty<1.99;ty+=1.0)
+            //        for(float tx=-1.0;tx<1.99;tx+=1.0)
+            //           doShadowTap(surfToLight,lightMapUV,vec2(dlt*tx,dlt*ty),0.90);//95);
 
-/*          float   Ldepth=unpack_depth(texture2D(shadowSampler, lightMapUV))*50.0;
+            /*          float   Ldepth=unpack_depth(texture2D(shadowSampler, lightMapUV))*50.0;
             if(Ldepth-surfToLight<-0.008)gl_FragColor.xyz*=0.75;        
             Ldepth=unpack_depth(texture2D(shadowSampler, lightMapUV.xy+vec2(-0.01,0.0)))*50.0;
             if(Ldepth-surfToLight<-0.008)gl_FragColor.xyz*=0.75;
             Ldepth=unpack_depth(texture2D(shadowSampler, lightMapUV.xy+vec2(-0.01,0.0)))*50.0;
             if(Ldepth-surfToLight<-0.008)gl_FragColor.xyz*=0.75;
-*/
-    }
-}
+            */
+            }
+            }
 
- const float exposure=0.1;
+            const float exposure=0.1;
 
- const float decay=0.95;
+            const float decay=0.95;
 
- const float density=0.3;
+            const float density=0.3;
 
- const float weight=0.98;
+            const float weight=0.98;
 
- const int NUM_SAMPLES = 16 ;
+            const int NUM_SAMPLES = 16 ;
 
-void doGodRays(vec2 texCoord){
-    float illuminationDecay = 1.0;
-    vec2 dt=vec2(texCoord.xy-vec2(0.5,0.5));
-    vec2 tco=v_texCoord.xy;
+            void doGodRays(vec2 texCoord){
+            float illuminationDecay = 1.0;
+            vec2 dt=vec2(texCoord.xy-vec2(0.5,0.5));
+            vec2 tco=v_texCoord.xy;
 
-    dt *= 1.0 / float(NUM_SAMPLES) * density;
-    for(int i=0; i < NUM_SAMPLES ; i++)
-    {
-        tco-=dt;
-        vec4 samp=texture2D(diffuseSampler,tco);
-        samp *= illuminationDecay * weight;
-        gl_FragColor+=samp;
-        illuminationDecay *= decay;
-    }
-    gl_FragColor *= exposure;
-}
+            dt *= 1.0 / float(NUM_SAMPLES) * density;
+            for(int i=0; i < NUM_SAMPLES ; i++)
+            {
+            tco-=dt;
+            vec4 samp=texture2D(diffuseSampler,tco);
+            samp *= illuminationDecay * weight;
+            gl_FragColor+=samp;
+            illuminationDecay *= decay;
+            }
+            gl_FragColor *= exposure;
+            }
 
-void main() {
-    vec4 worldSpace=getPixelWorld(v_texCoord);
-    
-    gl_FragColor=texture2D(diffuseSampler, v_texCoord);
-    gl_FragColor.a=1.0;
+            void main() {
+            vec4 worldSpace=getPixelWorld(v_texCoord);
 
-    if(worldSpace.y<=14.0){  //Add blue into underwater region...
-        float rat=(14.0-worldSpace.y)/20.0;
-        gl_FragColor.xyz=(vec3(0.0,0.5,1.0)*rat)+gl_FragColor.xyz;//(gl_FragColor.xyz*(1.0-rat));
-        
-        //Raycast to water surface
-  //      vec4  dEye=worldSpace-cameraMatrix[3];
-  //      dEye=(dEye*((worldSpace.y-14.0)/dEsye.y))+cameraMatrix[3];
-  //      computeShadowAtWorld(dEye);
-    }else{
+            gl_FragColor=texture2D(diffuseSampler, v_texCoord);
+            gl_FragColor.a=1.0;
 
-        computeShadowAtWorld(worldSpace);
-        
-        //doGodRays(v_texCoord);
-        //gl_FragColor.xyz=(gl_FragColor.xyz*-1.0)+1.0;
-    }
-    /*
-    if(v_texCoord.x<0.5 && v_texCoord.y<0.5){   //Draw light depthmap for debugging
-        vec4    dsamp=texture2D(shadowSampler, v_texCoord*2.0);
-        float Ldepth=unpack_depth(dsamp);
-        gl_FragColor.xyz=vec3(Ldepth*viewVolume.z);
-    }else
-    */
-    {
-     //   computeShadowAtWorld(worldSpace);
+            if(worldSpace.y<=14.0){  //Add blue into underwater region...
+            float rat=(14.0-worldSpace.y)/20.0;
+            gl_FragColor.xyz=(vec3(0.0,0.5,1.0)*rat)+gl_FragColor.xyz;//(gl_FragColor.xyz*(1.0-rat));
 
-//        worldSpace=clamp(mod(abs(worldSpace*0.1),1.0)*10.0,0.0,1.0);
-//        gl_FragColor.xyz*=worldSpace.xyz;        
-    }
-}
+            //Raycast to water surface
+            //      vec4  dEye=worldSpace-cameraMatrix[3];
+            //      dEye=(dEye*((worldSpace.y-14.0)/dEsye.y))+cameraMatrix[3];
+            //      computeShadowAtWorld(dEye);
+            }else{
 
+            computeShadowAtWorld(worldSpace);
 
-SCRIPT='endScripts';
+            //doGodRays(v_texCoord);
+            //gl_FragColor.xyz=(gl_FragColor.xyz*-1.0)+1.0;
+            }
+            /*
+            if(v_texCoord.x<0.5 && v_texCoord.y<0.5){   //Draw light depthmap for debugging
+            vec4    dsamp=texture2D(shadowSampler, v_texCoord*2.0);
+            float Ldepth=unpack_depth(dsamp);
+            gl_FragColor.xyz=vec3(Ldepth*viewVolume.z);
+            }else
+            */
+            {
+            //   computeShadowAtWorld(worldSpace);
+
+            //        worldSpace=clamp(mod(abs(worldSpace*0.1),1.0)*10.0,0.0,1.0);
+            //        gl_FragColor.xyz*=worldSpace.xyz;        
+            }
+            }
 
 
-</script>
+            SCRIPT='endScripts';
+
+
+    </script>
 
 </body>
 </html>

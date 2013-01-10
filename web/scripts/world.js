@@ -1147,6 +1147,8 @@ function renderHuds(){
             drawObject(hudTextObject);
         }
     }
+    hudTextObject.shaderPer.uvOrigin[0]=0;//(Math.random()-0.5);
+    hudTextObject.shaderPer.uvOrigin[1]=0;//(Math.random()-0.5);
 }
 
 function renderForward(){

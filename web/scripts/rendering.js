@@ -54,7 +54,7 @@ var g_lastEyePosition = new Array(3);
 g_eyePosition[2] = 5;
 var lookVector = vec3f(0, 0, 1.0);
 var targetPosition = vec3f(0,0,0);//new Array(3);
-var g_targetFixture = 0;
+var g_targetFixture = null;
 var g_cameraTargetList=[];
 var g_cameraTargetIndex=0;
 var g_targetBody = 45;
@@ -63,8 +63,7 @@ var targetOffset = [0, 2.0, 7.0];
 var targetLocalOffset = [0, 2.0, 5.0];
 var up = [0, 1, 0];
 var lightWorldPos = new Float32Array(3);
-var lightMatrix = new Float32Array(16)
-var rotorSpins = new Float32Array(3);
+var lightMatrix = new Float32Array(16);
 var v3t0 = new Array(3);
 var v3t1 = new Array(3);
 var v3t2 = new Array(3);
@@ -102,6 +101,7 @@ var passTransparent = 1;
 var passDepth = 2;
 var passLightDepth = 3;
 var passDeferred = 4;
+
 
 var g_rttPass=false;
 var g_passCustomShader=null;
@@ -229,7 +229,7 @@ function drawPrep(model,consts){
 
 function draw(model,per,zshader){
     if(g_passCustomShader!=null){
-        model.draw(g_passCustomShader.per);
+        model.draw(per);//g_passCustomShader.per);
         model.program=model.saveProgram;
     }else{
         model.draw(per);
@@ -275,12 +275,13 @@ function drawMesh(mesh, meshConst, meshPer, matrix, zshader) {
     setWorld(matrix);
     if(g_passCustomShader!=null){
         drawPrep(mesh,g_passCustomShader.consts, zshader);
-        draw(mesh,g_passCustomShader.per);
-    }else{
+//        draw(mesh,g_passCustomShader.per);
+    }else
+    {
         drawPrep(mesh,meshConst, zshader);
-        draw(mesh,meshPer);
     }
-}
+    draw(mesh,meshPer);
+ }
 
 function drawDebugSphere(position,radius){
     fast.matrix4.scaling(world, [radius,radius,radius]);
@@ -481,10 +482,13 @@ function buildObjectFromDef(def,remap,resize,repos){
     for(var t in def.material.textures){
         def.material.textures[t]=textureLoad(def.material.textures[t]);
     }
+    
     def.material.program = createProgramFromTags(def.vertexShader,def.fragmentShader);//'ralienVertexShader', 'ralienFragmentShader');
     if(def.depthVertexShader==undefined&&def.depthFragmentShader==undefined){
+        //No depth shader defined, so use default depth shader...
         def.depthShader=getDepthShader();//createProgramFromTags(def.vertexShader,def.fragmentShader);
     }else{
+        //Build the custom depth shader...
         def.depthShader={};
         def.depthShader.program=createProgramFromTags(
             (def.depthVertexShader!=undefined)?def.depthVertexShader:"depthOnlyVertexShader",
@@ -492,6 +496,7 @@ function buildObjectFromDef(def,remap,resize,repos){
         def.depthShader.consts=def.shaderConst;
         def.depthShader.per=def.shaderPer;
     }
+    
     var bexp=BlenderExport[def.exportName];
     if(def.isStatic){
         def.model = setupStaticModel(bexp,def.material,remap,resize,repos);

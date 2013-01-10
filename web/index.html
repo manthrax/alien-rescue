@@ -128,6 +128,7 @@
 
             <!--div class="uiElem" id="helpText" style="top: 40px; left: 10px;"-->
                 <div class="uiElem" id="helpText" style="top: 40px; left: 10px;">
+                    Help:<br/>
                     AWSD - Flight Thrust, Yaw<br/>
                     ARROW KEYS - Flight Pitch, Roll<br/>
                     Q - Switch camera mode:
@@ -171,24 +172,28 @@
                 <select class='uiElem' id='scriptMenu' style='position:relative'><option>test</option></select>
                 <br/>
                 <br/>
-                Incoming Chat:&nbsp;<ul id="incomingChatMessages"></ul>
-                <input type="text" id="outgoingChatMessage">
-
-
                 <a id="debugText">
                     debug text
                 </a>
+                
+
 
                 </div>
                 <!--text class='uiElem' id='scriptText'>script text</text-->
             <!--/div-->
+
+            <div class="uiElem" id="chatPanel">
+                Chat:&nbsp;
+                <ul id="incomingChatMessages"></ul>
+                <input type="text" id="outgoingChatMessage">
+            </div>
 
             <div class="uiElem" id="playerList">
                 players:
             </div>
 
             <!-- VIDEO STREAMING -->
-            <div class="uiElem" id="userVideo" style="top: 40px; left: 300px; float: right;">
+            <div class="uiElem" id="userVideo" style="top: 40px; left: 300px; float: right; width: 512px"  >
                 <h1>
                 </h1>
                 local video:
@@ -654,12 +659,13 @@
 
 
             uniform mat4 worldViewProjection;
+            uniform vec4 uvOrigin;
             attribute vec4 position;
             attribute vec2 texCoord;
             varying vec4 v_position;
             varying vec2 v_texCoord;
             void main() {
-            v_texCoord = vec2(texCoord.x,texCoord.y);
+            v_texCoord = vec2(texCoord.x,texCoord.y)+uvOrigin.xy;
             v_position = (worldViewProjection * position);
             gl_Position = v_position;
             }

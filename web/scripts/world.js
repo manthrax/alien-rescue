@@ -327,67 +327,49 @@ function setHelpActivation(helpActive){
     if(helpActive==false)
         canvas.focus();
 }
-/*
-var mouseDown=false,
-    posX   = 0,
-    posY   = 0,
-    innerX = 0,
-    innerY = 0;
 
-$("#playerList").on("mousedown",function(e){
-    innerX = e.pageX - $(this).offset().left;
-    innerY = e.pageY - $(this).offset().top;
-    mouseDown= true;
-}).on("mouseup",function(){
-    mouseDown=false;
-});
+var g_dragElement=null;
 
-$(document).on("mousemove",function(e){    
-    if (mouseDown){
-        var m = {  x: e.pageX-innerX,  y: e.pageY-innerY };        
-        $('#playerList').css({ left: m.x, top: m.y });       
-    }
-});
-*/
+function doPreventDefault(e){
+    if (e.preventDefault) e.preventDefault();
+    e.cancelBubble = true;
+    if (e.stopPropagation) e.stopPropagation();
+}
 
 function makeDraggableElement(targElem){
     targElem.draggable=true;
     targElem.onmousedown=function(evt){
+        //console.log("eclick start");
+        
         if(!evt.target.draggable)return;
+        g_dragElement=evt.target;
         evt.target.dragOrg={x:evt.pageX-evt.target.offsetLeft,y:evt.pageY-evt.target.offsetTop};
-        evt.target.beingDragged=true;
-        //console.log("start");
-    }
-    targElem.onmousemove=function(evt){
-        if(!evt.target.draggable)return;
-        if(evt.target.beingDragged){
-            evt.target.style.left=(evt.pageX-evt.target.dragOrg.x);
-            evt.target.style.top=(evt.pageY-evt.target.dragOrg.y);
-            //console.log("drag:"+(evt.x-evt.target.dragOrg.x));
-        }
-    }
-    targElem.onmouseout=function(evt){
-        if(!evt.target.draggable)return;
-        //console.log("stop");
-    //    evt.target.style.left=(evt.pageX-evt.target.dragOrg.x);
-     //   evt.target.style.top=(evt.pageY-evt.target.dragOrg.y);
-        evt.target.beingDragged=false;
-    }
-    targElem.onmouseup=function(evt){
-        if(!evt.target.draggable)return;
-        evt.target.beingDragged=false;
-        //evt.target.removeEventListener('mousemove', evt.target.onmousemove);
-        //console.log("stop");
+//        evt.target.beingDragged=true;
+        //console.log("dragElem start");
+        doPreventDefault(evt);
     }
     
+    targElem.onmousemove=function(evt){
+    }
+
+    targElem.onmouseout=function(evt){
+    }
+
+    targElem.onmouseup=function(evt){
+        if(!evt.target.draggable)return;
+        if(g_dragElement==evt.target)
+            g_dragElement=null;
+        //console.log("dragElem stop");
+    }
 }
+
 function synchronizeSettingsUI(){
     console.log("sync");
     
     makeDraggableElement(document.getElementById('playerList'));
-    
     makeDraggableElement(document.getElementById('helpText'));
     makeDraggableElement(document.getElementById('userVideo'));
+    makeDraggableElement(document.getElementById('chatPanel'));
     
     
     
@@ -655,22 +637,8 @@ function initialize() {
  //   chatInputField.onblur=function(){
  /// /      chatFocus=false;
  //   }
-    
-    document.onkeydown = function (e) {
-        if(document.activeElement==chatInputField)return;
-        if (updateAppKeys(e.keyCode, true)==true){
-            //Got app key
-        }
-        else if (updateControlKeys(e.keyCode, true)) {
-        //Got flight key
-        }
-    }
-    document.onkeyup = function (e) {
-        if(document.activeElement==chatInputField)return;
-        updateControlKeys(e.keyCode, false);
-    }
-
-    canvas.onmousedown = function (e) {
+ 
+    window.onmousedown = function (e) {
         //canvasFocussed=true;
         g_buttons |= 1 << e.button;
         //console.log("Got mouseDown");
@@ -679,19 +647,28 @@ function initialize() {
 
         if (e.button == 2) {
         }
-        if (e.preventDefault) e.preventDefault();
-        e.cancelBubble = true;
-        if (e.stopPropagation) e.stopPropagation();
+        //doPreventDefault(e);
     }
 
-    canvas.onmousemove = function (e) {
+    gl.canvas.onmousedown = function (e) {
+        window.focus();
+        e.preventDefault();
+        console.log("Window focussed.");
+    }
+    
+    window.onmousemove = function (e) {
+        
         //console.log("Got mouse move");
-        g_dragEnd.x = e.x;
-        g_dragEnd.y = e.y;
+        
+        g_dragEnd.x = e.pageX;
+        g_dragEnd.y = e.pageY;
         g_dragDelta.x = g_dragEnd.x - g_dragStart.x;
         g_dragDelta.y = g_dragEnd.y - g_dragStart.y;
         g_dragStart.x = g_dragEnd.x;
         g_dragStart.y = g_dragEnd.y;
+        
+        
+        
     //    console.log("mmx:"+e.deltaX+"mmy:"+e.deltaY);
         getDebugText();
         if(document.pointerLockEnabled) {
@@ -702,26 +679,44 @@ function initialize() {
 //            debugTextElem.innerHTML="mx:"+e.x+" my:"+ e.x;
         }
 
-        if ((g_buttons & 1) || (document.pointerLockEnabled)) {
-            g_viewRotation[0] += g_dragDelta.y *  0.01;
-            g_viewRotation[1] += g_dragDelta.x * -0.01;
+        if(g_dragElement!=null){
+        //    console.log("drag:"+g_dragDelta.x+","+g_dragDelta.y);
+            g_dragElement.style.left=(e.pageX-g_dragElement.dragOrg.x);
+            g_dragElement.style.top=(e.pageY-g_dragElement.dragOrg.y);
         }else{
-            if(g_targetFixture&&g_targetFixture!=null){
-                g_targetFixture.controls.joyAxis[0]=(g_dragEnd.x/gl.canvas.width)-0.5;
-                g_targetFixture.controls.joyAxis[1]=(g_dragEnd.y/gl.canvas.height)-0.5;
+            if ((g_buttons & 1) || (document.pointerLockEnabled)) {
+                g_viewRotation[0] += g_dragDelta.y *  0.01;
+                g_viewRotation[1] += g_dragDelta.x * -0.01;
+            //}else{
+                if(g_targetFixture&&g_targetFixture!=null){
+                    g_targetFixture.controls.joyAxis[0]=(g_dragEnd.x/document.width)-0.5;
+                    g_targetFixture.controls.joyAxis[1]=(g_dragEnd.y/document.height)-0.5;
+                }
             }
         }
-
     }
 
-    canvas.onmouseup = function (e) {
+    window.onmouseup = function (e) {
         g_buttons &= ~ (1 << e.button);
         //console.log("Got mouseup");
-        if (e.preventDefault) e.preventDefault();
-        e.cancelBubble = true;
-        if (e.stopPropagation) e.stopPropagation();
+        doPreventDefault(e);
     }
     
+    window.onkeydown = function (e) {
+        if(document.activeElement==chatInputField)return;
+        if (updateAppKeys(e.keyCode, true)==true){
+            //Got app key
+        }
+        else if (updateControlKeys(e.keyCode, true)) {
+            //Got flight key
+        }
+    }
+    
+    window.onkeyup = function (e) {
+        if(document.activeElement==chatInputField)return;
+        updateControlKeys(e.keyCode, false);
+    }
+
     connectToChatServer();
     
     gameLoop();
@@ -748,7 +743,7 @@ function wheel(event) {
         delta = -event.detail / 3;
     }
     if (delta) onscroll(delta);
-    if (event.preventDefault) event.preventDefault();
+    doPreventDefault(event);
     event.returnValue = false;
 
 }
@@ -907,16 +902,16 @@ function updateControls(fix){
     }
    
     if(g_buttons==1){
-        if(Math.abs(controls.joyAxis[0])>0.2){
+        if(Math.abs(controls.joyAxis[0])>0.02){
             controls.inputs.roll+=controls.joyAxis[0]*controls.forces.roll*-2.0;
             controls.inputs.yaw+=controls.joyAxis[0]*controls.forces.yaw*-1.0;
-        }	
-        if(Math.abs(controls.joyAxis[1])>0.2){
+        }
+        if(Math.abs(controls.joyAxis[1])>0.02){
             controls.inputs.pitch+=controls.joyAxis[1]*controls.forces.pitch*-2.0;
         }
     //controls.inputs.thrust+=controls.forces.thrust;
     }
-    	
+
     for(i in controls.inputs){
         if(controls.inputs[i]<controls.ranges[i][0])
             controls.inputs[i]=controls.ranges[i][0];
@@ -926,8 +921,10 @@ function updateControls(fix){
     if(controls.inputs.thrust<controls.defaults.thrust){
         controls.inputs.thrust+=controls.forces.thrust*0.5;
     }
-    rotorSpins[0] += (controls.inputs.thrust*5.0); //Math.sin(clock)*0.1;
-
+    for(var ck in fix.components){
+        var c=fix.components[ck];
+        if(c.controls)c.controls(fix);
+    }
 }
 
 function updateAvatarControls(fix){
@@ -1015,33 +1012,37 @@ function buildWorld() {
         ibase = bodies.length;
         prvrow = irow;
     }
-    for(var t=0;t<BlenderExport.spawns.length;t++){
-        var sp=BlenderExport.spawns[t];
-			
-        m16simpleTrans(sp.matrix,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
-        var pos=[sp.matrix[12],sp.matrix[13],sp.matrix[14]];
-        //v3simpleTrans([pos],g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
-	
-        if(sp.name=="chopper"){
-            var fix=makeTetraFixture(pos, chopperObject.model, chopperObject.shaderConst, chopperObject.shaderPer, updateChopperFixture);
-            fix.pathTime=0;
-            fix.formationOffset=[0,0,0,0];
-            v3srandv(fix.formationOffset,10.0);
-            fix.formationOffset[1]*=0.0;
-				
-            fix.engineSound=audio.addEmitter(fix,fix.bodies[0].position);
-        }else
-        if(sp.name=="ralien"){
-            makeDumbellFixture(pos,ralienObject, updateRalienFixture);
-        }else
-        if(sp.name=="hellcat"){
-            makePlaneFixture(pos,hellcatObject, updatePlaneFixture);
-        }else
-        if(sp.name=="sandrail"){
-            makeCarFixture(pos,sandrailObject, updateCarFixture);
-        }else
-        if(sp.name=="ptboat"){
-            makeCarFixture(pos,ptboatObject, updateBoatFixture);
+    for(var off=-3.0; off<5.999;off+=3.0)
+    {
+        for(var t=0;t<BlenderExport.spawns.length;t++){
+            var sp=BlenderExport.spawns[t];
+            for(var ct=0;ct<16;ct++)
+                m4t0[ct]=sp.matrix[ct];
+            m16simpleTrans(m4t0,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
+            
+            //console.log("DOin:"+off);
+            var pos=[m4t0[12]+off,m4t0[13],m4t0[14]+off];
+            //v3simpleTrans([pos],g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
+            if(sp.name=="chopper"){
+                var fix=makeHeliFixture(pos, chopperObject.model, chopperObject.shaderConst, chopperObject.shaderPer, updateChopperFixture);
+                fix.pathTime=0;
+                fix.formationOffset=[0,0,0,0];
+                v3srandv(fix.formationOffset,10.0);
+                fix.formationOffset[1]*=0.0;
+                fix.engineSound=audio.addEmitter(fix,fix.bodies[0].position);
+            }else
+            if(sp.name=="ralien"){
+                makeDumbellFixture(pos,ralienObject, updateRalienFixture);
+            }else
+            if(sp.name=="hellcat"){
+                makePlaneFixture(pos,hellcatObject, updatePlaneFixture);
+            }else
+            if(sp.name=="sandrail"){
+                makeCarFixture(pos,sandrailObject, updateCarFixture);
+            }else
+            if(sp.name=="ptboat"){
+                makeCarFixture(pos,ptboatObject, updateBoatFixture);
+            }
         }
     }
 		
@@ -1122,6 +1123,32 @@ function renderDeferred(srcDiffuse){
     fsQuadObject.model.textures.shadowSampler.texture=save_shadow;
 }
 
+function renderHuds(){
+    hudTextObject.matrix=m4t0;
+    for(var t=0;t<12;t++)m4t0[t]=viewInverse[t];
+//    if(g_targetFixture&&g_targetFixture!=null){
+//        for(var t=12;t<16;t++)m4t0[t]=g_targetFixture.matrix[t];
+//        drawObject(hudTextObject);
+//    }
+    for(var pk in g_playerList){
+        var p=g_playerList[pk];
+        if(p.avatar){
+            var fix = fixturesById[p.avatar];
+            for(var t=12;t<16;t++)m4t0[t]=fix.matrix[t];
+            
+            var idx=p.index;
+            var xpos=parseInt(idx/4);
+            var ypos = (idx-(xpos*4)) * 0.2;
+            xpos*=0.25;
+            
+            
+            hudTextObject.shaderPer.uvOrigin[0]=xpos;//(Math.random()-0.5);
+            hudTextObject.shaderPer.uvOrigin[1]=ypos;//(Math.random()-0.5);
+            drawObject(hudTextObject);
+        }
+    }
+}
+
 function renderForward(){
 
     //Log("--Draw terrain---------------------------------------");
@@ -1183,6 +1210,7 @@ function renderForward(){
 
     //fast.matrix4.translation(world, [0,0,0]);
     //fast.matrix4.scaling(m4t0, [1, 1, 1]);
+    
     for (var i = 0; i < fixtures.length; i++)   //Draw the physics fixture objects
         fixtures[i].draw();
 
@@ -1190,7 +1218,7 @@ function renderForward(){
 		
     if(g_renderPass==passDiffuse)
     {
-        gl.depthFunc(gl.LESS);
+        gl.depthFunc(gl.LEQUAL);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         //gl.blendEquation(gl.BLEND_ADD);//COLOR);
@@ -1205,14 +1233,15 @@ function renderForward(){
         g_debugObjectQueue.draw();
 	
 	
-    //    drawObject(billboardObject);
-
-        drawObject(hudTextObject);
-			
+        drawObject(billboardObject);
+        
+        
+        renderHuds();
         gl.disable(gl.BLEND);
         gl.depthFunc(gl.EQUAL);
 
-    }
+    }//else if(g_renderPass!=passLightDepth)
+     //   renderHuds();
 }
 
 function renderScene(pass,rtt,clear,rttIdx,shaderOverride,srcDiffuse){
@@ -1371,7 +1400,8 @@ function render(){
    //       renderScene(passDeferred,false,false,diffuseRTTextureID,getDefShadowShader());
    //       renderScene(passDeferred,true,false,depthRTTextureID,getDOFXShader());		//Render DOF X pass
    //       renderScene(passDeferred,false,false,0,getDOFYShader());			//Render DOF Y pass to framebuffer    
-
+   
+   
         }else{
             renderScene(passDeferred,true,false,depthRTTextureID,getDOFXShader());		//Render DOF X pass
             renderScene(passDeferred,false,false,0,getDOFYShader());			//Render DOF Y pass to framebuffer    
@@ -1490,6 +1520,19 @@ var g_networkId=null;
 var iosocket;
 
 
+function rebuildPlayerList()
+{   
+    var elem=document.getElementById("playerList");
+    var str="<list>PlayerList:</br>\n";
+    for(var key in g_playerList){
+        var p=g_playerList[key];
+        str+="<li>"+p.nick+"</li>\n";
+    }
+    str+="</list>";
+    elem.innerHTML=str;
+}
+
+
 function connectToChatServer()
 {
     var incomingChatElem=document.getElementById('incomingChatMessages');
@@ -1505,15 +1548,8 @@ function connectToChatServer()
         });
         iosocket.on('players', function(players) {
             g_playerList = players;
-            var elem=document.getElementById("playerList");
-            var str="<list>PlayerList:</br>\n";
-            for(var key in players){
-                var p=players[key];
-                str+="<li>"+key+":"+"</li>\n";
-            }
-            str+="</list>";
-            elem.innerHTML=str;
             g_localPlayer=g_playerList[g_networkId];
+            rebuildPlayerList();
         });
         iosocket.on('sim', function(data) {
             recvFromServer(data);
@@ -1527,20 +1563,26 @@ function connectToChatServer()
                 updateDynamicTexture();
             }
         });
-        iosocket.on('spectating', function(idx) {if(idx==g_targetFixture.id){g_playerList[g_networkId].spectating=true;console.log("spectating");}});
-        iosocket.on('controlling', function(idx) {if(idx==g_targetFixture.id){g_playerList[g_networkId].spectating=false;console.log("controlling");}});
+        iosocket.on('playerState', function(state) {
+            var plr=g_playerList[state.id];
+            for(var k in state)plr[k]=state[k];
+        });
+
         iosocket.on('disconnect', function() {incomingChatElem.innerHTML+='<li>Disconnected</li>';});
     });
     outgoingChatElem.onkeypress=function(event) {
         if(event.which == 13) {
-            event.preventDefault();
+            doPreventDefault(event);
+
             iosocket.emit('chat',outgoingChatElem.value);
 
             var ourPlayer=g_playerList[g_networkId];
-            if(ourPlayer)
+            if(ourPlayer){
                 ourPlayer.chat=outgoingChatElem.value;
-
-            incomingChatElem.innerHTML+='<li>'+outgoingChatElem.value+'</li>';
+                incomingChatElem.innerHTML+='<li>'+ourPlayer.nick+":"+outgoingChatElem.value+'</li>';
+            }else{
+                incomingChatElem.innerHTML+='<li>Not connected:'+outgoingChatElem.value+'</li>';                
+            }
             outgoingChatElem.value='';
             outgoingChatElem.blur();
             /*
@@ -1548,7 +1590,7 @@ function connectToChatServer()
                 renderPlayerImage(ourPlayer,getPlayerImageBuffer(ourPlayer.id));
                 updateDynamicTexture();
                 },1000);
-       */     
+            */
         }
     };
 };

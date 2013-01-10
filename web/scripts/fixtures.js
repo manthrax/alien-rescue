@@ -417,7 +417,7 @@ function updateChopperFixture() {
         cameraTrackFixture(fwd,up,right);
 
     }else{
-//        chopperTrackTarget(fi);
+        //chopperTrackTarget(fi);
     }
     var controls=fi.controls;
     var abt=Math.abs(controls.inputs.thrust);
@@ -469,6 +469,31 @@ function makeCarFixture(position, def, updater) {
     g_cameraTargetList.push([fix, ibase]);
 }
 
+function copy(obj){
+    var b={}
+    for(var k in obj)b[k]=obj[k];
+    return b;
+}
+
+function newHeliComponent(fix){
+    return{
+        init:function (fix){
+            fix.shaderPer=copy(fix.shaderPer);
+            fix.shaderPer.rotorSpins=new Float32Array(3);
+            fix.depthShaderPer=copy(fix.shaderPer);
+        },
+        controls: function(fix){ fix.shaderPer.rotorSpins[0] += (fix.controls.inputs.thrust*5.0);
+        }
+    }
+}
+
+function initFixture(fix){
+    for(var c in fix.components){
+        var cmp=fix.components[c];
+        if(cmp.init)cmp.init(fix);
+    }
+}
+
 function makePlaneFixture(position, def, updater) {
     var ibase = bodies.length;
     var fw = 3.0;
@@ -488,9 +513,15 @@ function makePlaneFixture(position, def, updater) {
     //    g_targetBody = ibase;
     g_cameraTargetList.push([fix, ibase]);
 }
-	
+
+function makeHeliFixture(position, model, Const, Per, updater) {
+    var fix=makeTetraFixture(position,model,Const,Per, updater);
+    fix.components.heliComponent = newHeliComponent();
+    initFixture(fix);
+    return fix;
+}
+
 function makeTetraFixture(position, model, Const, Per, updater) {
-		
     var ibase = bodies.length;
     var tscale = 1.3;
     addBody(sphere, sphereConst, spherePer, v3addv(v3t0, position, v3mulv(v3t1, [0, -0.5, 1], tscale)));

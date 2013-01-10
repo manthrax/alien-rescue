@@ -410,7 +410,12 @@ function testMovingSphereSphere(bodyA, bodyB) //returns undefined on no collisio
 }
 
 function drawFixture() {
-    drawMesh(this.mesh, this.shaderConst, this.shaderPer, this.matrix);
+    
+    if(g_renderPass ==  passDepth || g_renderPass == passLightDepth)
+        drawMesh(this.mesh, this.depthShaderConst, this.depthShaderPer, this.matrix, this.mesh.definition.depthShader);
+    else
+        drawMesh(this.mesh, this.shaderConst, this.shaderPer, this.matrix, this.mesh.definition.depthShader);       
+       
 }
 
 function drawBody(scale) {
@@ -501,7 +506,8 @@ function newFixture(bodies,update) {
         bodies: bodies,
         matrix: new Float32Array(16),
         update: update,
-        draw: drawFixture
+        draw: drawFixture,
+        components: {}
     }
     fixtures.push(fixture);
     return fixture;
@@ -519,6 +525,8 @@ function addFixture(bodies, omesh, oconst, oper,update) {
     fixture.mesh = omesh;
     fixture.shaderConst = oconst;
     fixture.shaderPer = oper;
+    fixture.depthShaderConst = oconst;
+    fixture.depthShaderPer = oper;
     fixture.id=g_fixtureBase++;
     fixturesById[fixture.id]=fixture;
     return fixture;

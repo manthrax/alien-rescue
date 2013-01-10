@@ -107,7 +107,6 @@ var	terrainDef={
 var	hellcatDef={
     exportName:'Hellcat',
     shaderConst:{
-        rotorSpins: rotorSpins,
         viewInverse: viewInverse,
         lightMatrix: lightMatrix,
         specular: one4,
@@ -135,7 +134,6 @@ var	hellcatDef={
 var	sandrailDef={
     exportName:'sandrail',
     shaderConst:{
-        rotorSpins: rotorSpins,
         viewInverse: viewInverse,
         lightMatrix: lightMatrix,
         specular: one4,
@@ -163,7 +161,6 @@ var	sandrailDef={
 var	ptboatDef={
     exportName:'ptboat',
     shaderConst:{
-        rotorSpins: rotorSpins,
         viewInverse: viewInverse,
         lightMatrix: lightMatrix,
         specular: one4,
@@ -191,7 +188,6 @@ var	ptboatDef={
 var chopperDef={
     exportName:'Cube002',
     shaderConst:{
-        rotorSpins: rotorSpins,
         viewInverse: viewInverse,
         lightMatrix: lightMatrix,
         specular: one4,
@@ -199,7 +195,7 @@ var chopperDef={
         specularFactor: 1.2,
         viewVolume: viewVolume
     },
-	
+    
     shaderPer :{
         lightColor: new Float32Array([1, 1, 1, 1]),
         world: world,
@@ -286,6 +282,7 @@ var	hudTextDef={
         specularFactor: 0.0
     },
     shaderPer:{
+        uvOrigin: new Float32Array([0,0.1,0,0]),
         lightColor: new Float32Array([1, 1, 1, 1]),
         world: world,
         worldViewProjection: worldViewProjection,

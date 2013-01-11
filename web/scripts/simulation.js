@@ -76,7 +76,7 @@ function freeContactList(col){
 
 var g_timers=new Float32Array([0,0,0]);
 var g_simTime = 0.0;
-var g_seaLevel = 14.0;
+var g_seaLevel = 14.0*160.0/30;
 
 function colGrid() {
     return {

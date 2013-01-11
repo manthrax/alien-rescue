@@ -244,7 +244,7 @@ function orthoLookAt(at,from,up,rng,dpth){
     var cw=0.5;//canvas.clientWidth*0.5;
     var ch=0.5;//canvas.clientHeight*0.5;
     if(rng)cw=ch=rng;
-    fast.matrix4.ortho(orthoProjection, -cw,cw,-ch,ch, 0.0, dpth?dpth:500.0);
+    fast.matrix4.ortho(orthoProjection, -cw,cw,-ch,ch, 0.0, dpth?dpth:g_FarZ);
     fast.matrix4.lookAt( orthoView, at, from, up);
 
     fast.matrix4.inverse(orthoViewInverse, orthoView);

@@ -167,7 +167,7 @@ function updatePlaneFixture() {
     var at = v3t6;
     var imp = v3t7;
     var cvel = v3t8;
-    
+    //Construct frame
     v3set(up,0.0,0.0,0.0);
     v3set(centroid,0.0,0.0,0.0);
     v3subv(right, fi.bodies[1].position0, fi.bodies[0].position0);
@@ -184,10 +184,12 @@ function updatePlaneFixture() {
 
     v3addv(centroid,axleCenter,tmp);
     v3mulv(centroid,centroid,0.5);
+    
     v3addv(centroid,centroid,v3mulv(tmp,up,0.5));
+    v3addv(centroid,centroid,v3mulv(tmp,fwd,1.5));
 
     v3addv(at,centroid,right);
-    
+    //v3addv(at,at,v3mulv(tmp,up,0.5));
     fast.matrix4.cameraLookAt(fi.matrix, centroid, at,up);
     // Dark place
     
@@ -205,52 +207,62 @@ function updatePlaneFixture() {
     var brwheel=fi.bodies[3];
     var blwheel=fi.bodies[2];
     var controls=fi.controls;
-        //Yaw force
-        if(controls.active.yaw[0]){
-            v3mulv(tmp,fwd,controls.active.yaw[0]*-1.0);
-            v3addv(tmp,tmp,right);
-
-            v3normalizev(tmp,tmp);
-        }
-        else
-        if(controls.active.yaw[1]){
-            v3mulv(tmp,fwd,controls.active.yaw[1]*-1.0);
-            v3subv(tmp,tmp,right);
-            v3normalizev(tmp,tmp);
-        }else{
-            v3copy(tmp,right);
-
-        }
-
-    //Roll force
-        v3mulv(tmp,up,controls.inputs.roll*1.1);
-        v3addv(frwheel.linearVelocity,frwheel.linearVelocity,tmp);
-        v3mulv(tmp,tmp,-1.0);
-        v3addv(flwheel.linearVelocity,flwheel.linearVelocity,tmp);
-   
-    //Pitch force
-        v3mulv(tmp,up,controls.inputs.pitch*1.1);
-        v3addv(brwheel.linearVelocity,brwheel.linearVelocity,tmp);
-        //v3mulv(tmp,tmp,-1.0);
-        v3addv(blwheel.linearVelocity,blwheel.linearVelocity,tmp);
-   
-   
-    //Simulate Lift
     
+    //Yaw force
+    if(controls.active.yaw[0]){
+        v3mulv(tmp,fwd,controls.active.yaw[0]*-1.0);
+        v3addv(tmp,tmp,right);
+        v3normalizev(tmp,tmp);
+    }
+    else
+    if(controls.active.yaw[1]){
+        v3mulv(tmp,fwd,controls.active.yaw[1]*-1.0);
+        v3subv(tmp,tmp,right);
+        v3normalizev(tmp,tmp);
+    }else{
+        v3copy(tmp,right);
+
+    }
+
+//Roll force
+    v3mulv(tmp,up,controls.inputs.roll*1.1);
+    v3addv(frwheel.linearVelocity,frwheel.linearVelocity,tmp);
+    v3mulv(tmp,tmp,-1.0);
+    v3addv(flwheel.linearVelocity,flwheel.linearVelocity,tmp);
+
+//Pitch force
+    v3mulv(tmp,up,controls.inputs.pitch*1.1);
+    v3addv(brwheel.linearVelocity,brwheel.linearVelocity,tmp);
+    //v3mulv(tmp,tmp,-1.0);
+    v3addv(blwheel.linearVelocity,blwheel.linearVelocity,tmp);
+
+//Yaw force
+
+    v3mulv(tmp,right,controls.inputs.yaw*1.1);
+    v3addv(brwheel.linearVelocity,brwheel.linearVelocity,tmp);
+    //v3mulv(tmp,tmp,-1.0);
+    v3addv(blwheel.linearVelocity,blwheel.linearVelocity,tmp);
+
+    //Simulate thrust
+
     v3set(cvel,0,0,0);
     for(i=0;i<fi.bodies.length;i++)
         v3addv(cvel,cvel, fi.bodies[i].linearVelocity);
-    var cdot=v3dot(fwd,cvel);
+    
+    var airspeed=v3dot(fwd,cvel);
     var thrust=controls.inputs.thrust*0.2;
     v3mulv(imp,fwd,thrust);
+    var cdot=airspeed;
     cdot*=1.0/5.0;
-    cdot*=10.12; //INcrease this for shorter takeoffs
+    cdot*=1.12; //INcrease this for shorter takeoffs
     cdot=cdot<0.0?0.0:cdot; //Cancel lift inreverse
     if(cdot>-gravity[1])cdot=-gravity[1];
     var drag=1.0-((cdot/-gravity[1])*0.001);
 
-    v3mulv(tmp,up,cdot);
+//cdot*=0.1;
+    v3mulv(tmp,up,cdot);    //Lift impulse
     v3addv(imp,imp,tmp);
+    
     for(i=0;i<fi.bodies.length;i++)
         v3addv(fi.bodies[i].linearVelocity,fi.bodies[i].linearVelocity, imp);
 
@@ -258,30 +270,18 @@ drag*=0.999;
     for(i=0;i<fi.bodies.length;i++)
         v3mulv(fi.bodies[i].linearVelocity,fi.bodies[i].linearVelocity, drag);
       //End lift sim
-  /*
+  
   //Aerodynamics
-    for(i=0;i<2;i++)
-    {
-        var amt=(fi.bodies[i].colliding) ? 1.0 : 1.0;
-        projectBodyVelocity(fi.bodies[i],up,amt);
-        projectBodyVelocity(fi.bodies[i],right,amt);
-    }
-    var pitch=controls.inputs.pitch*0.2;
-    var yaw=controls.inputs.yaw*0.2;
-    v3mulv(tmp,up,(1.0-pitch));
-    v3addv(tmp,tmp,v3mulv(tmp,fwd,pitch));
-    v3mulv(imp,right,(1.0-yaw));
-    v3addv(imp,imp,v3mulv(imp,fwd,yaw));
-    for(i=2;i<4;i++){
-        var amt=(fi.bodies[i].colliding) ? 1.0 : 1.0;
-        projectBodyVelocity(fi.bodies[i],tmp,amt);
-        projectBodyVelocity(fi.bodies[i],imp,amt);
-    }
-    */
+    //ddamp lateral velocities..
+    dampVelocities(fi.bodies,right,0.05);
+    dampVelocities(fi.bodies,up,0.05);
+
+
+//do camera tracking
     v3mulv(fwd,fwd,-1.0);
     v3mulv(right,right,-1.0);
     if(g_targetFixture==fi)
-        cameraTrackFixture(fwd,up,right);
+        cameraTrackFixture(fwd,up,right,1.0,-0.2,1.0);
        
 }
 
@@ -342,6 +342,14 @@ function updateRalienFixture() {
     
 }
 
+
+function dampVelocities(bodies,right,amt){
+    for(var i=0;i<bodies.length;i++){	//Damp lateral velocities
+        var vl = bodies[i].linearVelocity; //Front left
+        v3addv(vl,vl,v3mulv(v3t0,right,v3dot(vl,right)*-amt));	//Damp l->r lateral velocity
+    }
+}
+
 function updateChopperFixture() {
     var fi=this;
     var tmp = v3t5;
@@ -399,8 +407,10 @@ function updateChopperFixture() {
     //v3addv(vl,vl,v3mulv(tmp,up,v3dot(vl,up)*-0.001));		//Damp tail u-d sphere tangential velocity
     v3addv(vl, vl, v3mulv(tmp, right, controls.inputs.yaw));    //Yaw
     v3addv(vl, vl, v3mulv(tmp, up, controls.inputs.pitch));	//Pitch as a function of fwd velocity
-		
-    if(fi.bodies[3].position[1]>200.0){
+
+/*
+    if(fi.bodies[3].position[1]>200.0)
+    {
         for(var i=0;i<4;i++){	//Damp vertical velocity if above hard deck
             var lv=fi.bodies[i].linearVelocity;
             if(lv[1]>0.0){
@@ -408,11 +418,8 @@ function updateChopperFixture() {
             }
         }
     }
-
-    for(var i=0;i<4;i++){	//Damp lateral velocities
-        var vl = fi.bodies[i].linearVelocity; //Front left
-        v3addv(vl,vl,v3mulv(tmp,right,v3dot(vl,right)*-0.003));	//Damp l->r lateral velocity
-    }
+*/
+    dampVelocities(bodies,right,0.003);
     if(g_targetFixture==fi){
         cameraTrackFixture(fwd,up,right);
 
@@ -496,15 +503,17 @@ function initFixture(fix){
 
 function makePlaneFixture(position, def, updater) {
     var ibase = bodies.length;
-    var fw = 3.0;
+    var fw = 3.7;
     var rw = 1.5;
     
     var cons=[[-fw,0.0, -2.0],[ fw,0.0, -2.0],[-rw,0.0, 2.0],[rw,0.0, 2.0],
     [0.0, 1.5, 0.0]];
     var nbodies=[];
-    for(var i=0;i<cons.length;i++)
+    for(var i=0;i<cons.length;i++){
         nbodies.push(addBody(sphere, sphereConst, spherePer, v3addv(v3t0, position, cons[i])));
-
+    }
+    nbodies[0].radius=0.6;
+    nbodies[1].radius=0.6;
     for (var t = 0; t < cons.length; t++) bodies[ibase + t].visible = g_debugBodies;
     cons=[0,1,1,2, 2,3,3,0, 0,2,3,1, 0,4,1,4,2,4,3,4];
     for(var i=0;i<cons.length;i+=2)

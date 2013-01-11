@@ -182,7 +182,7 @@ function setupSkybox() {
         cubeSampler: textureLoad(skyboxTextures)
     };
     var program = createProgramFromTags('skyVertexShader', 'skyFragmentShader');
-    var arrays = tdl.primitives.createCube(600.0);
+    var arrays = tdl.primitives.createCube(g_FarZ+100.0);
 
     return new tdl.models.Model(program, arrays, textures);
 }
@@ -291,7 +291,7 @@ function loadSettings(){
 //        localStorage['appRunning']=true;
     }
     
-    if(localStorage['settings']&&false){//){//
+    if(localStorage['settings']){//&&false){//){//
         var settings=JSON.parse(localStorage['settings']);
         if( settings.version && settings.version==g_settingsVersion)
         {
@@ -554,8 +554,8 @@ function initialize() {
     chopperObject = buildObjectFromDef(chopperDef);
 	
     billboardObject = buildObjectFromDef(billboardDef,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
-    
-    hudTextObject = buildObjectFromDef(hudTextDef,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);//,[0,1,2],[1,1,1],[0,0,0]);    
+    //g_terrainVertexScale
+    hudTextObject = buildObjectFromDef(hudTextDef,g_terrainVertexRemap,[-70,40,70],g_terrainVertexTranslation);//,[0,1,2],[1,1,1],[0,0,0]);    
 
     borgObject = buildObjectFromDef(borgDef,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
 	
@@ -964,11 +964,11 @@ function chopperTrackTarget(fi){
     }
 }
 
-function cameraTrackFixture(fwd,up,right){
+function cameraTrackFixture(fwd,up,right,fscl,uscl,rscl){
 
-    v3copy(v3t1, v3mulv(v3t0, fwd, targetOffset[2]))
-    v3addv(v3t1, v3t1, v3mulv(v3t0, up, targetOffset[1]))
-    v3addv(v3t1, v3t1, v3mulv(v3t0, right, targetOffset[0]))
+    v3copy(v3t1, v3mulv(v3t0, fwd, targetOffset[2]*(fscl?fscl:1.0)))
+    v3addv(v3t1, v3t1, v3mulv(v3t0, up, targetOffset[1]*(uscl?fscl:1.0)))
+    v3addv(v3t1, v3t1, v3mulv(v3t0, right, targetOffset[0]*(rscl?fscl:1.0)))
     v3mulv(targetLocalOffset,targetLocalOffset,0.9);
 
     v3mulv(v3t1,v3t1,0.1);
@@ -990,7 +990,7 @@ function buildWorld() {
     for (var iy = 0; iy <= wid; iy++) {
         var irow = ibase;
         for (var ix = 0; ix <= wid; ix++) {
-            var nbody = addBody(sphere, sphereConst, spherePer, [(ix * gd) - (wid * gd * 0.5), 30.0, (iy * gd) - (wid * gd * 0.5)], [Math.PI * 1.5, Math.PI * 0.5, 0]);
+            var nbody = addBody(sphere, sphereConst, spherePer, [(ix * gd) - (wid * gd * 0.5), 150.0, (iy * gd) - (wid * gd * 0.5)], [Math.PI * 1.5, Math.PI * 0.5, 0]);
             if (ix > 0 && iy > 0) {
                 var btl = bodies[prvrow + ix - 1];
                 var btr = bodies[prvrow + ix];
@@ -1216,7 +1216,7 @@ function renderForward(){
     for (var i = 0; i < fixtures.length; i++)   //Draw the physics fixture objects
         fixtures[i].draw();
 
-    drawObject(borgObject);
+//    drawObject(borgObject);
 		
     if(g_renderPass==passDiffuse)
     {
@@ -1337,8 +1337,8 @@ function render(){
     
     //frustumFarCorners: frustumFarCorners,
     var brad=5.5;
-    var farScale=500.0;
-    var farDepth=500.0;
+    var farScale=g_FarZ;
+    var farDepth=g_FarZ;
     fast.mulScalarVector(v3t0, -farDepth, v3t5);
     fast.mulScalarVector(v3t3, aspectRatio*farScale, v3t3);
     fast.mulScalarVector(v3t4, farScale, v3t4);
@@ -1385,7 +1385,7 @@ function render(){
         
         renderScene(passLightDepth,true,true,lightDepthRTTextureID);	//Render shadow depth map
 
-        viewVolume[2]=500.0;
+        viewVolume[2]=g_FarZ;
         renderScene(passDepth,true,true,depthRTTextureID);		//Render view depth map
         
         gl.depthFunc(gl.EQUAL);

@@ -153,11 +153,13 @@ var maxTx=1;
 var maxTy=1;
 
 var g_terrainVertexRemap=[0,2,1]
-var g_terrainVertexScale=vec3f(-60,30,60)
+var g_terrainVertexScale=vec3f(-160,160,160)
 var g_terrainVertexTranslation=vec3f(0,0,0)
 
 
 var g_NearZ=0.1;
-var g_FarZ=500.0;
+var g_FarZ=10000.0;
+
+    //500.0;
 
 

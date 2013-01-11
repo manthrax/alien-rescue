@@ -113,8 +113,8 @@
 
         <!--div id="info"><a href="http://threedlibrary.googlecode.com" target="_blank">tdl.js</a> - example</div-->
 
-        <video id="video" autoplay controls style="display:none" width="512" height="512">
-            <source src="assets/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'> 
+        <video id="video" autoplay loop controls style="display:none" width="512" height="512">
+            <source src="assets/movie.ogg" type='video/ogg; codecs="theora, vorbis"'> 
             <!--video id="video" autoplay loop style="display:none" controls="controls">
             your browser does not support the video tag--> 
         </video>
@@ -976,7 +976,7 @@
             mapCoord*=screenToRT;
 
             float depth=unpack_depth(texture2D(depthSampler,mapCoord));
-            float waterDepth=v_position.z/500.0;
+            float waterDepth=v_position.z/10000.0;//500.0;
             ref.a=min(min(abs(depth-waterDepth)*100.0,1.0),v_position.z);
 
             ref.a-=(normal.y*0.1);

@@ -25,7 +25,7 @@ var dynCtx = g_dynamicCanvas.getContext('2d');
 dynCtx.font        = "normal 12px Arial";
 dynCtx.fillStyle="#FFFF00";
 dynCtx.strokeStyle = "#000000";
-dynCtx.textAlign(center);
+dynCtx.textAlign='center';
 //dynCtx.font = 'italic 40px Calibri';
 var g_videoImageBuffers={};
 var g_videoThumbWidth=128;

@@ -96,7 +96,7 @@
         <script type="text/javascript" src="scripts/meshes/hudText.js"></script>
         <script type="text/javascript" src="scripts/meshes/fsQuad.js"></script>
         <script type="text/javascript" src="scripts/meshes/waterPlane.js"></script>
-        <script type="text/javascript" src="scripts/meshes/borg.js"></script>
+        <script type="text/javascript" src="scripts/meshes/borg2.js"></script>
 
         <script type="text/javascript" src="scripts/util.js"></script>
         <script type="text/javascript" src="scripts/audio.js"></script>
@@ -113,9 +113,9 @@
 
         <!--div id="info"><a href="http://threedlibrary.googlecode.com" target="_blank">tdl.js</a> - example</div-->
 
-        <video id="video" autoplay loop controls style="display:none" width="512" height="512">
+        <video id="video" autoplay loop style="display:none" width="256" height="256">
             <source src="assets/movie.ogg" type='video/ogg; codecs="theora, vorbis"'> 
-            <!--video id="video" autoplay loop style="display:none" controls="controls">
+            <!--video id="video" autoplay controls loop style="display:none" controls="controls">
             your browser does not support the video tag--> 
         </video>
 
@@ -161,6 +161,18 @@
                         <option>Show</option>
                     </select>
                     <br/>
+                    Local Video:
+                    <select id='localVideoToggle'  class='uiElem' style='position:relative' onchange='g_renderDebugBodies=(selectedIndex==0)?false:true;blur();'>
+                        <option>Enabled</option>
+                        <option>Disabled</option>
+                    </select>
+                    <br/>
+                    Remote Video:
+                    <select id='remoteVideoToggle'  class='uiElem' style='position:relative' onchange='g_renderDebugBodies=(selectedIndex==0)?false:true;blur();'>
+                        <option>Enabled</option>
+                        <option>Disabled</option>
+                    </select>
+                    <br/>
                     <br/>
                     <br/>
                     F11 - Full Screen - (Chrome)<br/>
@@ -194,9 +206,7 @@
 
             <!-- VIDEO STREAMING -->
             <div class="uiElem" id="userVideo" style="top: 40px; left: 300px; float: right; width: 512px"  >
-                <h1>
-                </h1>
-                local video:
+                Local Video:<br/>
                 <video autoplay id="sourcevid" width="128" style="display:none" height="100"></video>
 
                 <img src="" id="frame" style="width:128px;height:96px"/>
@@ -1160,9 +1170,9 @@
 
             gl_FragColor=texture2D(diffuseSampler, v_texCoord);
             gl_FragColor.a=1.0;
-
-            if(worldSpace.y<=14.0){  //Add blue into underwater region...
-            float rat=(14.0-worldSpace.y)/20.0;
+            float g_seaLevel=14.0*160.0/30.0;
+            if(worldSpace.y<=g_seaLevel){  //Add blue into underwater region... 5107983777
+            float rat=(g_seaLevel-worldSpace.y)/20.0;
             gl_FragColor.xyz=(vec3(0.0,0.5,1.0)*rat)+gl_FragColor.xyz;//(gl_FragColor.xyz*(1.0-rat));
 
             //Raycast to water surface

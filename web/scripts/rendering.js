@@ -340,10 +340,11 @@ function createModelArrays(base,remap,rescale,trans){
     return narrays;
 }
 
-function setupModel(base,material,remap,rescale,trans,mode){
+function setupModel(base,material,remap,rescale,trans,mode,outArrays){
     var narrays=createModelArrays(base,remap,rescale,trans);
     var textures=material.textures;
     var program=material.program;
+    if(outArrays)outArrays.arrays=narrays;
     return new tdl.models.Model(program, narrays, textures,mode);
 }
 
@@ -381,7 +382,7 @@ function m16simpleTrans(mat,remap,rescale,trans){
 }
 
 
-function setupStaticModel(base,material,remap,rescale,trans,mode){
+function setupStaticModel(base,material,remap,rescale,trans,mode,outArrays){
     var arrays=createModelArrays(base,remap,rescale,trans);
     var indices = arrays.indices.buffer;
     var ect = indices.length;
@@ -398,6 +399,7 @@ function setupStaticModel(base,material,remap,rescale,trans,mode){
     }
     var textures=material.textures;
     var program=material.program;
+    if(outArrays)outArrays.arrays=arrays;
     return new tdl.models.Model(program, arrays, textures,mode);
 }
 
@@ -478,7 +480,7 @@ function setupPath(base) {
     return path;
 }
 
-function buildObjectFromDef(def,remap,resize,repos){
+function buildObjectFromDef(def,remap,resize,repos,outArrays){
     for(var t in def.material.textures){
         def.material.textures[t]=textureLoad(def.material.textures[t]);
     }
@@ -499,9 +501,9 @@ function buildObjectFromDef(def,remap,resize,repos){
     
     var bexp=BlenderExport[def.exportName];
     if(def.isStatic){
-        def.model = setupStaticModel(bexp,def.material,remap,resize,repos);
+        def.model = setupStaticModel(bexp,def.material,remap,resize,repos,undefined,outArrays);
     }else
-        def.model = setupModel(bexp,def.material,remap,resize,repos);
+        def.model = setupModel(bexp,def.material,remap,resize,repos,undefined,outArrays);
     def.model.definition=def;
     if(bexp.matrix!=undefined){
         def.matrix=new Float32Array(bexp.matrix);

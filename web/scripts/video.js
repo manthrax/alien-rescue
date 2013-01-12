@@ -25,7 +25,7 @@ var dynCtx = g_dynamicCanvas.getContext('2d');
 dynCtx.font        = "normal 12px Arial";
 dynCtx.fillStyle="#FFFF00";
 dynCtx.strokeStyle = "#000000";
-//dynCtx.textAlign(center);
+dynCtx.textAlign(center);
 //dynCtx.font = 'italic 40px Calibri';
 var g_videoImageBuffers={};
 var g_videoThumbWidth=128;
@@ -42,8 +42,8 @@ function renderPlayerImage(player,img)
     var tx=xpos+(g_videoThumbHeight/2);
     var ty=ypos+11;
     
-    dynCtx.strokeText(player.name, tx,ty);
-    dynCtx.fillText(player.name, tx,ty);
+    dynCtx.strokeText(player.nick, tx,ty);
+    dynCtx.fillText(player.nick, tx,ty);
     ty+=g_videoThumbHeight-12;
     dynCtx.strokeText(player.chat, tx,ty);
     dynCtx.fillText(player.chat, tx,ty);

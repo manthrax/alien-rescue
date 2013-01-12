@@ -17,6 +17,7 @@ var players={};
 var rooms={};
 
 var occupiedFixtures={};
+var fixtures=[];
 
 //io.sockets.on('message', function (msg) {
 	//console.log('Message Received: ', msg);
@@ -83,6 +84,12 @@ io.sockets.on('connection', function (socket) {
     
     socket.on('sim', function (msg) {
         //console.log('Message Received: ', msg);
+        var plr=players[socket.id];
+        if(plr.avatar){
+            var pav=fixtures[plr.avatar];
+            if(pav)
+                pav.lastState=msg;
+        }
         socket.broadcast.emit('sim', {data:msg,id:socket.id});   //Forward chat/game data
     });
     
@@ -102,6 +109,10 @@ io.sockets.on('connection', function (socket) {
         else{
             plr.spectating=false;
             occupiedFixtures[fixtureId]=socket.id;  //Take control of the fixture
+            if(!fixtures[fixtureId])
+                fixtures[fixtureId]={
+                    
+                };
         }
         var state={id:plr.id,spectating:plr.spectating,avatar:plr.avatar};
         io.sockets.emit('playerState',{id:plr.id,spectating:plr.spectating,avatar:plr.avatar});   //Send the player state change to everyone.

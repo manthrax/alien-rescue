@@ -191,6 +191,7 @@ function updatePlaneFixture() {
     v3addv(at,centroid,right);
     //v3addv(at,at,v3mulv(tmp,up,0.5));
     fast.matrix4.cameraLookAt(fi.matrix, centroid, at,up);
+    
     // Dark place
     
  /*   v3subv(tmp, fi.bodies[4].position0, fi.bodies[0].position0);
@@ -419,7 +420,7 @@ function updateChopperFixture() {
         }
     }
 */
-    dampVelocities(bodies,right,0.003);
+    dampVelocities(fi.bodies,right,0.003);
     if(g_targetFixture==fi){
         cameraTrackFixture(fwd,up,right);
 

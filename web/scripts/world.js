@@ -142,6 +142,20 @@ function getHeight(vx, vy) {
     return heightmapData[(py * 1024) + px];
 }
 
+function colGridAddMesh(grid,origin,vertices,indices){
+    var npos=vertices;
+    var ect = indices.length;
+    for (i = 0; i < ect; i += 3) {
+        var vi = indices[i] * 3;
+        var v0=v3add(origin,[npos[vi], npos[vi + 1], npos[vi + 2]]);
+        vi = indices[i + 1] * 3;
+        var v1=v3add(origin,[npos[vi], npos[vi + 1], npos[vi + 2]]);
+        vi = indices[i + 2] * 3;
+        var v2=v3add(origin,[npos[vi], npos[vi + 1], npos[vi + 2]]);
+        colGridAddTri(grid, colTri(v0,v1,v2));
+    }
+}
+
 function setupTerrain(tx,ty) {
     var mdl=setupStaticModel(BlenderExport.terrain,setupTerrainMaterial(),g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
     return mdl;
@@ -149,6 +163,8 @@ function setupTerrain(tx,ty) {
     var rtn = new tdl.models.Model(terrainProgram, arrays, terrainTextures);
     var scl = g_terrainPatchSize;
     var arrays = tdl.primitives.createPlane(scl, scl, 255,255);
+    
+    
     var npos = arrays.position.buffer;
     var ntex = arrays.texCoord.buffer;
     var ti = 0;
@@ -157,19 +173,11 @@ function setupTerrain(tx,ty) {
         npos[i + 1] = (getHeight(ntex[ti + 0], ntex[ti + 1]) * 0.5) - 50.0;
         ti += 2;
     }
-    var indices = arrays.indices.buffer;
-    var ect = indices.length;
-    var vo=[tx*g_terrainPatchSize, 0, ty*g_terrainPatchSize];
+    
     var startT = new Date().getTime();
-    for (i = 0; i < ect; i += 3) {
-        var vi = indices[i] * 3;
-        var v0=v3add(vo,[npos[vi], npos[vi + 1], npos[vi + 2]]);
-        vi = indices[i + 1] * 3;
-        var v1=v3add(vo,[npos[vi], npos[vi + 1], npos[vi + 2]]);
-        vi = indices[i + 2] * 3;
-        var v2=v3add(vo,[npos[vi], npos[vi + 1], npos[vi + 2]]);
-        colGridAddTri(worldGrid, colTri(v0,v1,v2));
-    }
+    var indices = arrays.indices.buffer;
+    var vo=[tx*g_terrainPatchSize, 0, ty*g_terrainPatchSize];
+    colGridAddMesh(worldGrid,vo,npos,indices);
     var endT = new Date().getTime();
     console.log("colGridTime:"+(endT-startT));
     startT=endT;
@@ -324,6 +332,8 @@ function setMouseCapture(capture){
 function setHelpActivation(helpActive){
     setElementVisibility('helpText',helpActive);
     setElementVisibility('userVideo',helpActive);
+    setElementVisibility('playerList',helpActive);
+    setElementVisibility('chatPanel',helpActive);
     if(helpActive==false)
         canvas.focus();
 }
@@ -336,7 +346,17 @@ function doPreventDefault(e){
     if (e.stopPropagation) e.stopPropagation();
 }
 
+var g_draggableElements=[];
+function layoutDraggables(){
+    for(var di in g_draggableElements)
+    {
+        var elem=g_draggableElements[di];
+    //    elem.
+    }
+}
+
 function makeDraggableElement(targElem){
+    g_draggableElements.push(targElem);
     targElem.draggable=true;
     targElem.onmousedown=function(evt){
         //console.log("eclick start");
@@ -371,7 +391,7 @@ function synchronizeSettingsUI(){
     makeDraggableElement(document.getElementById('userVideo'));
     makeDraggableElement(document.getElementById('chatPanel'));
     
-    
+    layoutDraggables();
     
     var targElem=document.getElementById('cameraTarget');
     targElem.options.length=0;
@@ -557,10 +577,14 @@ function initialize() {
     //g_terrainVertexScale
     hudTextObject = buildObjectFromDef(hudTextDef,g_terrainVertexRemap,[-70,40,70],g_terrainVertexTranslation);//,[0,1,2],[1,1,1],[0,0,0]);    
 
-    borgObject = buildObjectFromDef(borgDef,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation);
-	
-    fast.matrix4.translation(borgObject.matrix, [-208.0,53.0,127.0]);
-	
+    //var borgOrg=[-570.0,245.0,496.0];
+    var borgOrg=[-570.0,100.0,496.0];
+    var borgArrays={};
+    borgObject = buildObjectFromDef(borgDef,g_terrainVertexRemap,[5280.0,5280.0,5280.0],g_terrainVertexTranslation,borgArrays);
+    
+    fast.matrix4.translation(borgObject.matrix,borgOrg);
+    colGridAddMesh(worldGrid,borgOrg,borgArrays.arrays.position.buffer,borgArrays.arrays.indices.buffer);
+
     fsQuadObject = buildObjectFromDef(fsQuadDef);
     waterObject = buildObjectFromDef(waterDef,g_terrainVertexRemap,g_terrainVertexScale,g_terrainVertexTranslation); 
     ralienObject = buildObjectFromDef(ralienDef);
@@ -987,6 +1011,7 @@ function buildWorld() {
     var prvrow = bodies.length;
     var gd = 1.0;
     var wid = 9;
+    if(false)
     for (var iy = 0; iy <= wid; iy++) {
         var irow = ibase;
         for (var ix = 0; ix <= wid; ix++) {
@@ -1012,6 +1037,8 @@ function buildWorld() {
         ibase = bodies.length;
         prvrow = irow;
     }
+    
+    
     for(var off=-3.0; off<5.999;off+=3.0)
     {
         for(var t=0;t<BlenderExport.spawns.length;t++){
@@ -1216,7 +1243,7 @@ function renderForward(){
     for (var i = 0; i < fixtures.length; i++)   //Draw the physics fixture objects
         fixtures[i].draw();
 
-//    drawObject(borgObject);
+    drawObject(borgObject);
 		
     if(g_renderPass==passDiffuse)
     {

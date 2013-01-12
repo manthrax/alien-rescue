@@ -504,7 +504,7 @@ function newFixture(bodies,update) {
     var fixture = {
         controls: newControls(),
         bodies: bodies,
-        matrix: new Float32Array(16),
+        matrix: new Array(16),//Float32Array(16),
         update: update,
         draw: drawFixture,
         components: {}
@@ -659,17 +659,17 @@ function updateSphere() {
 
         v3mulv(sp.linearVelocity,sp.linearVelocity,0.99-((subm/r2)*0.1));	//Damp velocity based on submersion.
 
-        if(sp.linearVelocity[1]<0.0){
-            sp.linearVelocity[1]*=0.9;//water friction :P
+        if(sp.linearVelocity[1]<0.0){   //If on the upward phase of a water bob
+            sp.linearVelocity[1]*=0.99;//water friction :P
         }
     }else{
         sp.inWater=false;
-        sp.linearVelocity = v3addv(sp.linearVelocity,sp.linearVelocity, gravity);
+        sp.linearVelocity = v3addv(sp.linearVelocity,sp.linearVelocity, gravity);   //Add gravity to lv
     }
     v3addv(sp.position,sp.position, sp.linearVelocity);
     v3addv(sp.rotation,sp.rotation, sp.angularVelocity);
     
-	
+    
     v3copy(bboxt0.min,sp.position);
     v3copy(bboxt0.max,sp.position);
     AABAccum(bboxt0, sp.position0);
@@ -678,6 +678,9 @@ function updateSphere() {
     var tmp=v3t0;
     var p0=v3copy(v3t1,v3addv(tmp,sp.position0,[0,10,0]));
     var p1=v3copy(v3t2,v3addv(tmp,sp.position0,[0,-10,0]));
+    //var p0=v3copy(v3t1,sp.position0);
+    //var p1=v3copy(v3t2,sp.position);
+    
     var intersect=v3t3;
     var radius=0;
     var colliding=false;
@@ -745,7 +748,7 @@ function updateSphere() {
         }
         if(colliding==true){
             if(collisionForce>1.0)collisionForce=1.0;
-            v3mulv(sp.linearVelocity, sp.linearVelocity,1.0-collisionForce);
+        //    v3mulv(sp.linearVelocity, sp.linearVelocity,1.0-collisionForce);
             
         }
  /*

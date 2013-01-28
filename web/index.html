@@ -55,12 +55,23 @@
                 text-align: center
 
             }
+            
+            .uiComponent, .uiElem{
+                z-index: 2;
+                color: yellow;
+                font-family: sans-serif;
+                font-size: small;
+                background-color: rgba(0,0,0,0.5);
+                border-radius: 0px;
+                padding: 0px;
+            }
+            
             .uiElem {
                 position: absolute;
                 top: 10px;
                 left: 10px;
-                
-                
+               
+                overflow: hidden;
                 -webkit-touch-callout: none;
                 -webkit-user-select: none;
                 -khtml-user-select: none;
@@ -68,15 +79,11 @@
                 -ms-user-select: none;
                 user-select: none;
 
-                z-index: 2;
-                color: yellow;
-                font-family: sans-serif;
-                font-size: small;
-                background-color: rgba(0,0,0,0.5);
                 border-radius: 6px;
                 padding: 4px;
             }
 
+            
             #viewContainer {
                 width: 100%;
                 height: 100%;
@@ -105,6 +112,7 @@
 
         <script type="text/javascript" src="scripts/meshes/objectDefs.js"></script>
         <script type="text/javascript" src="scripts/globals.js"></script>
+        <script type="text/javascript" src="scripts/network.js"></script>
         <script type="text/javascript" src="scripts/world.js"></script>
         <script type="text/javascript" src="scripts/fixtures.js"></script>
     </head>
@@ -197,11 +205,12 @@
             <div class="uiElem" id="chatPanel">
                 Chat:&nbsp;
                 <ul id="incomingChatMessages"></ul>
-                <input type="text" id="outgoingChatMessage">
+                <input class="uiComponent" type="text" id="outgoingChatMessage">
             </div>
 
             <div class="uiElem" id="playerList">
-                players:
+                <input class="uiComponent" type="text" id="outgoingNickField">
+                <ul id="playerListElems"></ul>
             </div>
 
             <!-- VIDEO STREAMING -->
@@ -799,21 +808,22 @@
             }
             const float focalDepth=0.05;
             void main() {
-            float depth=unpack_depth(texture2D(depthSampler, v_texCoord));
-            ////float depth=FixedToFloat(texture2D(depthSampler, v_texCoord));
-            depth=((depth-focalDepth)*2.0);
-            float blurSize = depth/512.0;////512.0; //// I've chosen this size because this will result in that every step will be one pixel wide if the RTScene texture is of size 512x512
-            vec4 sum = vec4(0.0);
-            sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 4.0*blurSize, v_texCoord.y)) * 0.05;
-            sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 3.0*blurSize, v_texCoord.y)) * 0.09;
-            sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 2.0*blurSize, v_texCoord.y)) * 0.12;
-            sum += texture2D(diffuseSampler, vec2(v_texCoord.x - blurSize, v_texCoord.y)) 	* 0.15;
-            sum += texture2D(diffuseSampler, vec2(v_texCoord.x, v_texCoord.y)) 				* 0.18;
-            sum += texture2D(diffuseSampler, vec2(v_texCoord.x + blurSize, v_texCoord.y)) 	* 0.15;
-            sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 2.0*blurSize, v_texCoord.y)) * 0.12;
-            sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 3.0*blurSize, v_texCoord.y)) * 0.09;
-            sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 4.0*blurSize, v_texCoord.y)) * 0.05;
-            gl_FragColor = vec4(sum.rgb,depth);
+                float depth=unpack_depth(texture2D(depthSampler, v_texCoord));
+                ////float depth=FixedToFloat(texture2D(depthSampler, v_texCoord));
+                depth=((depth-focalDepth)*2.0);
+                float blurSize = depth/512.0;////512.0; //// I've chosen this size because this will result in that every step will be one pixel wide if the RTScene texture is of size 512x512
+                vec4 sum = vec4(0.0);
+                sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 4.0*blurSize, v_texCoord.y)) * 0.05;
+                sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 3.0*blurSize, v_texCoord.y)) * 0.09;
+                sum += texture2D(diffuseSampler, vec2(v_texCoord.x - 2.0*blurSize, v_texCoord.y)) * 0.12;
+                sum += texture2D(diffuseSampler, vec2(v_texCoord.x - blurSize, v_texCoord.y)) 	* 0.15;
+                sum += texture2D(diffuseSampler, vec2(v_texCoord.x, v_texCoord.y)) 				* 0.18;
+                sum += texture2D(diffuseSampler, vec2(v_texCoord.x + blurSize, v_texCoord.y)) 	* 0.15;
+                sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 2.0*blurSize, v_texCoord.y)) * 0.12;
+                sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 3.0*blurSize, v_texCoord.y)) * 0.09;
+                sum += texture2D(diffuseSampler, vec2(v_texCoord.x + 4.0*blurSize, v_texCoord.y)) * 0.05;
+
+                   gl_FragColor = vec4(sum.rgb,depth);
             }
 
             SCRIPT='DOFYPassVertexShader';
@@ -857,7 +867,16 @@
             sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y+ 2.0*blurSize)) * 0.12;
             sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y+ 3.0*blurSize)) * 0.09;
             sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y+ 4.0*blurSize)) * 0.05;
+
             gl_FragColor = vec4(sum.rgb,1.0);////sum;
+            
+            /*
+               float df=0.001;
+               float da=texture2D(depthSampler, v_texCoord+vec2(-df,-df)).a;
+               float db=texture2D(depthSampler, v_texCoord+vec2(df,df)).a;
+               if(abs(da-db)>0.01)
+                   gl_FragColor*=0.01;
+           */
             }
 
             SCRIPT='convPassVertexShader';
@@ -891,6 +910,9 @@
             for(int i=0;i<9;i++)
             sum += texture2D(depthSampler, vec2(v_texCoord.x , 	v_texCoord.y-((i-4)*blurSize))) * 0.05;
             gl_FragColor = vec4(sum.rgb,1.0);
+            
+   
+                    
             }
 
             SCRIPT='waterVertexShader';
@@ -1206,6 +1228,14 @@
 
 
     </script>
-
+    
+    <!--img id="cueImage" src="assets/0001.png" style="display:none" onload="g_poolSim.assetLoaded();"/>
+    <img id="tableImage" src="assets/table.png" style="display:none" onload="g_poolSim.assetLoaded();"/>
+    <audio id="ballBall" src="assets/ballball.ogg" onload="g_poolSim.assetLoaded();"></audio>
+    <audio id="ballCue" src="assets/ballcue.ogg" onload="g_poolSim.assetLoaded();"></audio>
+    <audio id="ballRail" src="assets/ballrail.ogg" onload="g_poolSim.assetLoaded();"></audio>
+    <audio id="ballPocket" src="assets/ballpocket.ogg" onload="g_poolSim.assetLoaded();"></audio>
+    <canvas id="dynamicCanvas" ></canvas>
+    <script type="text/javascript" src="scripts/poolSim.js"></script-->
 </body>
 </html>

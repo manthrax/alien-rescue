@@ -28,7 +28,7 @@ function allocConstraint(){
         activeConstraints=cnst;
         return cnst;
     }
-    var cnst=newConstraint();
+    cnst=newConstraint();
     constraints.push(cnst);
     cnst.next=activeConstraints;
     activeConstraints=cnst;
@@ -40,7 +40,12 @@ var anchorConstraints = [];
 var aphasicConstraints = [];
 var fixtures = [];
 
-var g_queryRgn={minu:0,maxu:0,minv:0,maxv:0};
+var g_queryRgn={
+    minu:0,
+    maxu:0,
+    minv:0,
+    maxv:0
+};
 var g_queryBuffer=[];
 var g_collisionBuffer=[];
 
@@ -48,30 +53,30 @@ var g_collisionBuffer=[];
 var g_freeContacts=null;
 
 function allocContact(){
-	if(g_freeContacts==null){
-		var col={
-			next:null,
-			time:0.0,
-			position:[0,0,0],
-			normal:[0,1,0],
-			body:null
-		};
-		return col;
-	}
-	var col=g_freeContacts;
-	g_freeContacts=col.next;
-	col.next=null;
-	return col;
+    if(g_freeContacts==null){
+        var col={
+            next:null,
+            time:0.0,
+            position:[0,0,0],
+            normal:[0,1,0],
+            body:null
+        };
+        return col;
+    }
+    col=g_freeContacts;
+    g_freeContacts=col.next;
+    col.next=null;
+    return col;
 }
 
 function freeContactList(col){
-	var n=null;
-	do{
-		n=col.next;
-		col.next=g_freeContacts;
-		g_freeContacts=col;
-		col=n;
-	}while(n);
+    var n=null;
+    do{
+        n=col.next;
+        col.next=g_freeContacts;
+        g_freeContacts=col;
+        col=n;
+    }while(n);
 }
 
 var g_timers=new Float32Array([0,0,0]);
@@ -101,7 +106,14 @@ function AABox(box) {
 }
 
 function colTri(v0, v1, v2) {
-    var edgeVectors = [v3normalize(v3subv(v3t0,v1, v0)), v3normalize(v3subv(v3t0,v2, v1)), v3normalize(v3subv(v3t0,v0, v2))];
+    
+    var edgeVectors = [v3normalize(v3subv(v3t0,v1, v0)), 
+                        v3normalize(v3subv(v3t0,v2, v1)), 
+                        v3normalize(v3subv(v3t0,v0, v2))];
+    var edgeLengths=[v3dot(edgeVectors[0],v3subv(v3t0,v1, v0)),
+                    v3dot(edgeVectors[1],v3subv(v3t0,v2, v1)),
+                    v3dot(edgeVectors[2],v3subv(v3t0,v0, v2))];
+
     var faceNormal = v3normalize(v3crossv(v3t0,edgeVectors[0], edgeVectors[1]));
     
     var verts = [v0, v1, v2];
@@ -136,8 +148,10 @@ function colTri(v0, v1, v2) {
         bounds: bounds,
         verts: verts,
         edgeVectors: edgeVectors,
+        edgeLengths: edgeLengths,
         faceNormal: faceNormal,
         edgeNormals: edgeNormals
+        
     };
 }
 /*
@@ -295,6 +309,13 @@ function AABAccum(box, va) {
     }
 }
 
+function AABExpand(box, rd) {
+    for (var i = 0; i < 3; i++) {
+        box.min[i]-=rd;
+        box.max[i]+=rd;
+    }
+}
+
 
 function colGridGetPoint(rpt,cgrid, point) {
     var gmin = v3subv(v3t0,point, cgrid.origin);
@@ -313,7 +334,7 @@ function colGridGetRegion(cgrid, bounds) {
     g_queryRgn.minv=parseInt(v3dot(gmin, cgrid.v));
     g_queryRgn.maxu=parseInt(v3dot(gmax, cgrid.u));
     g_queryRgn.maxv=parseInt(v3dot(gmax, cgrid.v));
-	return g_queryRgn;
+    return g_queryRgn;
 }
 
 
@@ -340,12 +361,15 @@ function colGridGenerate(cgrid, subdepth) {
         var rgn = colGridGetRegion(cgrid, tri.bounds);
         var grid = cgrid.grid;
         for (var u = rgn.minu; u <= rgn.maxu; u++)
-        for (var v = rgn.minv; v <= rgn.maxv; v++) {
-            if (grid[v] == undefined) grid[v] = [];
-            if (grid[v][u] == undefined) grid[v][u] = {items:new Array(16),count:0};
-            var gd=grid[v][u];
-            gd.items[gd.count++]=tri;
-        }
+            for (var v = rgn.minv; v <= rgn.maxv; v++) {
+                if (grid[v] == undefined) grid[v] = [];
+                if (grid[v][u] == undefined) grid[v][u] = {
+                    items:new Array(16),
+                    count:0
+                };
+                var gd=grid[v][u];
+                gd.items[gd.count++]=tri;
+            }
     }
 }
 
@@ -364,22 +388,22 @@ function colGridQueryPoint(cbuf,cgrid, bounds) {
 }
 
 function colGridQueryRgn(cbuf,cgrid, bounds) {
-	var cct=0;
+    var cct=0;
     var rgn = colGridGetRegion(cgrid, bounds);
     var grid = cgrid.grid;
     for (var u = rgn.minu; u <= rgn.maxu; u++)
-    for (var v = rgn.minv; v <= rgn.maxv; v++) {
-        if (grid[v] == undefined) continue;
-        if (grid[v][u] == undefined) continue;
-        var cc = grid[v][u];
-        for (var e = 0; e < cc.count; e++) {
-            var tri = cc.items[e];
-            if (tri.selected == false) {
-				cbuf[cct++]=tri;
-                tri.selected = true;
+        for (var v = rgn.minv; v <= rgn.maxv; v++) {
+            if (grid[v] == undefined) continue;
+            if (grid[v][u] == undefined) continue;
+            var cc = grid[v][u];
+            for (var e = 0; e < cc.count; e++) {
+                var tri = cc.items[e];
+                if (tri.selected == false) {
+                    cbuf[cct++]=tri;
+                    tri.selected = true;
+                }
             }
         }
-    }
     for (var r = 0; r < cct; r++) {
         cbuf[r].selected = false;
     }
@@ -424,7 +448,7 @@ function drawBody(scale) {
         return;
     
     var position = sp.position0;
-/*
+    /*
     var rotation = sp.rotation;
     rotation[1] = Math.atan2(sp.linearVelocity[0], sp.linearVelocity[2]) + (Math.PI * 1.5);
     fast.matrix4.scaling(m4t0, [1, 1, 1]);
@@ -448,8 +472,8 @@ function drawBody(scale) {
     //    fast.matrix4.mul(world, world, m4t0);
     }
     fast.matrix4.translation(world, position);
- //   setWorld(world);
- sp.shaderPer.scale=sp.radius*2.0;
+    //   setWorld(world);
+    sp.shaderPer.scale=sp.radius*2.0;
     drawMesh(sp.mesh, sp.shaderConst, sp.shaderPer, world);
 }
 
@@ -481,8 +505,8 @@ function updateConstraint(con) {
         v3addv(con.bodyA.position,con.bodyA.position, v3mulv(v3t1,dlt, d2 * 0.95 * rmass));
         v3addv(con.bodyB.position,con.bodyB.position, v3mulv(v3t1,dlt, d2 * -0.95 * imass));
 
-        //con.bodyA.linearVelocity=v3add(con.bodyB.linearVelocity,v3sub(v3sub(con.bodyA.linearVelocity,con.bodyB.linearVelocity),v3mul(dlt,v3dot(con.bodyA.linearVelocity,dlt))));
-        //con.bodyB.linearVelocity=v3add(con.bodyA.linearVelocity,v3sub(v3sub(con.bodyB.linearVelocity,con.bodyA.linearVelocity),v3mul(dlt,v3dot(con.bodyB.linearVelocity,dlt))));
+    //con.bodyA.linearVelocity=v3add(con.bodyB.linearVelocity,v3sub(v3sub(con.bodyA.linearVelocity,con.bodyB.linearVelocity),v3mul(dlt,v3dot(con.bodyA.linearVelocity,dlt))));
+    //con.bodyB.linearVelocity=v3add(con.bodyA.linearVelocity,v3sub(v3sub(con.bodyB.linearVelocity,con.bodyA.linearVelocity),v3mul(dlt,v3dot(con.bodyB.linearVelocity,dlt))));
     }
 }
 
@@ -561,23 +585,132 @@ function addBody(omesh, oconst, oper, position, rotation) {
     return body;
 }
 
-function bbox(){return {
-	min: [0, 0, 0],
-	max: [0, 0, 0]
-}};
+function bbox(){
+    return {
+        min: [0, 0, 0],
+        max: [0, 0, 0]
+    }
+}
 
 var bboxt0=bbox();
 
+function collideRayTriangle(ck,p0,p1,radius,intersect,outNormal)
+{        
+    var tmp=v3t0;
+    var nearestT=2.0;
+    //var outNormal=
+        v3copy(outNormal,ck.faceNormal);
+    var nearPlanePoint=v3copy(v3t5,ck.verts[0]);
+    var sins=v3dot(outNormal,v3subv(tmp,p0,nearPlanePoint));
+    var sine=v3dot(outNormal,v3subv(tmp,p1,nearPlanePoint));
+    var sign=sins>0.0?1.0:-1.0;
+    if(sign<0){ //Flip signs of checks if we are on the outside/inside
+        sins*=-1.0;
+        sine*=-1.0;
+        v3mulv(outNormal,outNormal,-1.0);
+    }
+    if(sins>=radius && sine>=radius)
+        return 2.0;
+    if(sins>=radius && sine<radius){
+        sins-=radius;
+        sine-=radius;
+        var localColTime=sins/(sine-sins);
+        v3addv(intersect,p0,v3mulv(intersect,v3subv(tmp,p0,p1),localColTime));
+
+        //Test intersect point within triangle face
+        var inside=true;
+        for(var i=0;i<3;i++){
+            v3subv(tmp,intersect,ck.verts[i]);
+            if(v3dot(tmp,ck.edgeNormals[i])<0.0)
+                inside=false;
+        }
+        if(inside===true){
+            //g_debugObjectQueue.push({position:vec3(intersect),radius:1.0});
+            return localColTime;
+        }else{
+        //Check against edge vectors..
+        }
+    }
+    return 2.0;
+}
+
 function findNearestContactOnRay(cct,rayStart,rayEnd,radius){
     var tmp=v3t0;
+    var intersect=v3t3;
     var p0=v3copy(v3t1,rayStart);
     var p1=v3copy(v3t2,rayEnd);
-    var intersect=v3t3;
+    var outNormal=v3t4;
+    var nearestNormal=v3t7;
     var nearestT=2.0;
     var nearestPt=v3t6;
-	var contacts=null;
+    var contacts=null;
     for (var ci = 0; ci < cct; ci++) {
         var ck = g_queryBuffer[ci];
+        var colT=collideRayTriangle(ck,p0,p1,radius,intersect,outNormal);
+        if(colT<nearestT){
+            nearestT=colT;
+            v3copy(nearestPt,intersect);
+            v3copy(nearestNormal,outNormal);
+        }
+    }
+    if(nearestT<2.0){
+        var col=allocContact();
+        col.time=nearestT;
+        v3copy(col.position,nearestPt);
+        v3copy(col.normal,nearestNormal);
+        col.next=contacts;
+        contacts=col;
+    }
+    return contacts;
+}
+
+function raycast(rayStart,rayEnd,radius){
+    v3copy(bboxt0.min,rayEnd);
+    v3copy(bboxt0.max,rayEnd);
+    AABAccum(bboxt0, rayEnd);
+    bboxt0.min[0]-=radius;
+    bboxt0.min[1]-=radius;
+    bboxt0.min[2]-=radius;
+    bboxt0.max[0]+=radius;
+    bboxt0.max[1]+=radius;
+    bboxt0.max[2]+=radius;
+    var cct = colGridQueryRgn(g_queryBuffer,worldGrid,bboxt0);
+    return findNearestContactOnRay(cct,rayStart,rayEnd,radius);
+}
+
+function resolveCollisionsLinearY(sp,collisions,cct){
+    for (var ci = 0; ci < cct; ci++) {  //Loop through all potential colliders
+        var ck = collisions[ci];
+        
+        var outNormal=v3copy(v3t4,ck.faceNormal);
+        var nearPlanePoint=v3copy(v3t5,ck.verts[0]);
+        var sins=v3dot(outNormal,v3subv(tmp,p0,nearPlanePoint));
+        var sine=v3dot(outNormal,v3subv(tmp,p1,nearPlanePoint));
+        var sign=sins>0.0?1.0:-1.0;
+        if(sign<0){ //Flip signs of checks if we are on the outside/inside
+            sins*=-1.0;
+            sine*=-1.0;
+            v3mulv(outNormal,outNormal,-1.0);
+        }
+        if(sins>=radius && sine>=radius)
+            continue;
+        
+    }
+}
+
+function resolveCollisions(sp,collisions,cct){
+    var tmp=v3t0;
+    var p0=v3copy(v3t1,v3addv(tmp,sp.position0,[0,10,0]));
+    var p1=v3copy(v3t2,v3addv(tmp,sp.position0,[0,-10,0]));
+    //var p0=v3copy(v3t1,sp.position0);
+    //var p1=v3copy(v3t2,sp.position);
+    
+    var intersect=v3t3;
+    var radius=0;
+    var colliding=false;
+    var collisionForce=0.0;
+    for (var ci = 0; ci < cct; ci++) {  //Loop through all potential colliders
+        var ck = collisions[ci];
         
         var outNormal=v3copy(v3t4,ck.faceNormal);
         var nearPlanePoint=v3copy(v3t5,ck.verts[0]);
@@ -604,39 +737,28 @@ function findNearestContactOnRay(cct,rayStart,rayEnd,radius){
                 if(v3dot(tmp,ck.edgeNormals[i])<0.0)
                     inside=false;
             }
+            
             if(inside===true){
-                //g_debugObjectQueue.push({position:vec3(intersect),radius:1.0});
-				if(localColTime<nearestT){
-					nearestT=localColTime;
-					v3copy(nearestPt,intersect);
-				}
-            }else{
-				//Check against edge vectors..
-			}
+                //    g_debugObjectQueue.push({position:vec3(intersect),radius:0.2});
+                if(sp.position[1]<intersect[1]+sp.radius){
+                    sp.position[1]=intersect[1]+sp.radius;
+                    v3subv(tmp,sp.position,sp.position0);
+
+                    var vdot=v3dot(sp.linearVelocity,outNormal);
+                    if(vdot<0.0){   //If sphere is moving into surface
+                        v3addv(sp.linearVelocity,sp.linearVelocity ,v3mulv(tmp,outNormal,vdot*-1.0));   // Remove velocity component entering surface
+                        colliding=true;
+                        collisionForce -= vdot;
+                    }
+                }
+            }
+        }
+        if(colliding==true){
+            if(collisionForce>1.0)
+                collisionForce=1.0;
         }
     }
-	if(nearestT<2.0){
-		var col=allocContact();
-		col.time=nearestT;
-		v3copy(col.position,nearestPt);
-		col.next=contacts;
-		contacts=col;
-	}
-	return contacts;
-}
-
-function raycast(rayStart,rayEnd,radius){
-    v3copy(bboxt0.min,rayEnd);
-    v3copy(bboxt0.max,rayEnd);
-    AABAccum(bboxt0, rayEnd);
-	bboxt0.min[0]-=radius;
-	bboxt0.min[1]-=radius;
-	bboxt0.min[2]-=radius;
-    bboxt0.max[0]+=radius;
-	bboxt0.max[1]+=radius;
-	bboxt0.max[2]+=radius;
-    var cct = colGridQueryRgn(g_queryBuffer,worldGrid,bboxt0);
-	return findNearestContactOnRay(cct,rayStart,rayEnd,radius);
+    return colliding;
 }
 
 function updateSphere() {
@@ -645,7 +767,7 @@ function updateSphere() {
         return;
     v3copy(sp.linearVelocity0, sp.linearVelocity);
     v3copy(sp.position0, sp.position);
-    if(sp.position[1]<g_seaLevel){
+    if(sp.position[1]<g_seaLevel){  //In water
         sp.inWater=true;
         var subm=g_seaLevel-sp.position[1];
         var r2=sp.radius*2.0;
@@ -653,7 +775,7 @@ function updateSphere() {
         if(subm>=r2)
             subm=r2;
         var rat=(subm/r2);
-        v3addv(sp.linearVelocity,sp.linearVelocity, v3mulv(v3t0,gravity,(rat-0.5)*-2.0));
+        //v3addv(sp.linearVelocity,sp.linearVelocity, v3mulv(v3t0,gravity,(rat-0.5)*-2.0));
 
         v3addv(sp.linearVelocity,sp.linearVelocity, v3mulv(v3t0,gravity,(rat-0.5)*-2.0));
 
@@ -669,97 +791,14 @@ function updateSphere() {
     v3addv(sp.position,sp.position, sp.linearVelocity);
     v3addv(sp.rotation,sp.rotation, sp.angularVelocity);
     
-    
     v3copy(bboxt0.min,sp.position);
     v3copy(bboxt0.max,sp.position);
     AABAccum(bboxt0, sp.position0);
+    AABExpand(bboxt0,sp.radius)
     var cct = colGridQueryRgn(g_queryBuffer,worldGrid,bboxt0);
     
-    var tmp=v3t0;
-    var p0=v3copy(v3t1,v3addv(tmp,sp.position0,[0,10,0]));
-    var p1=v3copy(v3t2,v3addv(tmp,sp.position0,[0,-10,0]));
-    //var p0=v3copy(v3t1,sp.position0);
-    //var p1=v3copy(v3t2,sp.position);
+    colliding = resolveCollisions(sp,g_queryBuffer,cct);
     
-    var intersect=v3t3;
-    var radius=0;
-    var colliding=false;
-    var collisionForce=0.0;
-    for (var ci = 0; ci < cct; ci++) {  //Loop through all potential colliders
-        var ck = g_queryBuffer[ci];
-        
-        var outNormal=v3copy(v3t4,ck.faceNormal);
-        var nearPlanePoint=v3copy(v3t5,ck.verts[0]);
-        var sins=v3dot(outNormal,v3subv(tmp,p0,nearPlanePoint));
-        var sine=v3dot(outNormal,v3subv(tmp,p1,nearPlanePoint));
-        var sign=sins>0.0?1.0:-1.0;
-        if(sign<0){ //Flip signs of checks if we are on the outside/inside
-            sins*=-1.0;
-            sine*=-1.0;
-            v3mulv(outNormal,outNormal,-1.0);
-        }
-        if(sins>=radius && sine>=radius)
-            continue;
-        if(sins>=radius && sine<radius){
-            sins-=radius;
-            sine-=radius;
-            var localColTime=sins/(sine-sins);
-            v3addv(intersect,p0,v3mulv(intersect,v3subv(tmp,p0,p1),localColTime));
-            
-            //Test intersect point within triangle face
-            var inside=true;
-            for(var i=0;i<3;i++){
-                v3subv(tmp,intersect,ck.verts[i]);
-                if(v3dot(tmp,ck.edgeNormals[i])<0.0)
-                    inside=false;
-            }
-            
-            if(inside===true){
-            //    g_debugObjectQueue.push({position:vec3(intersect),radius:0.2});
-                //v3copy(p0,intersect);
-                //v3mulv(sp.linearVelocity, sp.linearVelocity, 0.98);
-                if(sp.position[1]<intersect[1]+sp.radius){
-                    sp.position[1]=intersect[1]+sp.radius;
-                    v3subv(tmp,sp.position,sp.position0);
-                    
-                    var vdot=v3dot(sp.linearVelocity,outNormal);
-                    
-                    if(vdot<0.0){   //If sphere is moving into surface
-                        //sp.linearVelocity[1]*=-1.0;
-                        
-                        //v3addv(v3t4,sp.linearVelocity ,v3mulv(tmp,outNormal,vdot*-1.0));
-                        v3addv(sp.linearVelocity,sp.linearVelocity ,v3mulv(tmp,outNormal,vdot*-1.0));   // Remove velocity component entering surface
-                        //var sql=v3sqlen(sp.linearVelocity);
-                        //	var gripVel=(1.0*-vdot)*0.05;
-                        //	gripVel*=gripVel;
-                        //	if(sql<gripVel)//Simulate some friction
-                        //		v3mulv(sp.linearVelocity, sp.linearVelocity, 0.0+(0.95*sql/gripVel));
-                        colliding=true;
-                        collisionForce -= vdot;
-                        //Apply frictive force with ground
-                        
-                        //if(vdot>1.0)vdot=1.0;
-                        //v3mulv(sp.linearVelocity, sp.linearVelocity,1.0-vdot);
-            //            v3mulv(sp.linearVelocity, sp.linearVelocity,0.95);
- 
-                    }
-                }
-            }
-        }
-        if(colliding==true){
-            if(collisionForce>1.0)collisionForce=1.0;
-        //    v3mulv(sp.linearVelocity, sp.linearVelocity,1.0-collisionForce);
-            
-        }
- /*
-        var vmy = ck.bounds.min[1] + radius;
-        //var vmy = ck.bounds.min[1];
-        if (sp.position[1] < vmy) {
-            sp.position[1] = vmy;
-            v3mulv(sp.linearVelocity, sp.linearVelocity, 0.98);
-        }
- */
-    }
     sp.colliding=colliding;
 }
 
@@ -772,22 +811,22 @@ function updateSim() {
     if (g_enableConstraints){
         var len=constraints.length;
         if(phaseFrame&1){
-            for (var i = 0;i<len; i++) {
+            for (i = 0;i<len; i++) {
                 var con = constraints[i];//(i+phaseFrame)%len];
                 updateConstraint(con);
             }
         }else{
-            for (var i = len-1;i>=0; i--) {
-                var con = constraints[i];//(i+phaseFrame)%len];
+            for (i = len-1;i>=0; i--) {
+                con = constraints[i];//(i+phaseFrame)%len];
                 updateConstraint(con);
             }
         }
-        var len=aphasicConstraints.length;
-        for (var i = 0;i<len; i++)updateConstraint(aphasicConstraints[i]);
-        var len=anchorConstraints.length;
-        for (var i = 0;i<len; i++)updateConstraint(anchorConstraints[i]);
+        len=aphasicConstraints.length;
+        for (i = 0;i<len; i++)updateConstraint(aphasicConstraints[i]);
+        len=anchorConstraints.length;
+        for (i = 0;i<len; i++)updateConstraint(anchorConstraints[i]);
     }
-    for (var i = 0; i < fixtures.length; i++) {
+    for (i = 0; i < fixtures.length; i++) {
         var fix = fixtures[i];
         fix.update();
         updateControls(fix);

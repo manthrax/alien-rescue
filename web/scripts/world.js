@@ -56,8 +56,46 @@ function matrixSetRowVector3(mat,row,vec){
 }
 
 
+//var g_poolSim;
+function paraTest(){
+    var g_dynamicCanvas=document.getElementById("dynamicCanvas");
+    var dynCtx = g_dynamicCanvas.getContext('2d');
+    
+ //   if(!g_poolSim){
+ //       g_poolSim = new PoolSim(g_dynamicCanvas);
+ //   }
+
+ //   g_poolSim.update(dynCtx)
+ //   if((g_frameCount%300)==0)
+ //      g_poolSim.rerack();
+ //   g_poolSim.draw(dynCtx);
+
+    var ox=10.0;
+    var oy=100.0;
+    var vx=3.0;
+    var vy=-30.0;
+    var gx=0.098;
+    
+    dynCtx.beginPath();
+
+    dynCtx.strokeStyle='#000000';
+    
+    dynCtx.moveTo(ox,oy);
+    for(var i=0;i<40;i++)
+    {
+        var dx=ox+(i*vx);
+        var dy=oy+(i*(vy+(gx*i)));
+        dynCtx.lineTo(dx,dy);
+    }
+    dynCtx.stroke();
+    
+}
+
 function updateCamera(noclip){
-	
+
+    paraTest();
+    
+    
     if(g_paused==true || g_camMode == camFollowPath){
 		
         var maxVel=0.2;
@@ -103,8 +141,7 @@ function updateCamera(noclip){
     } else if(g_camMode == camFreeFly){
 		
     }
-
-	
+    
     if(!noclip){
         v3copy(g_camRay.start,g_lastEyePosition);
         v3copy(g_camRay.end,g_eyePosition);
@@ -181,7 +218,7 @@ function setupTerrain(tx,ty) {
     var endT = new Date().getTime();
     console.log("colGridTime:"+(endT-startT));
     startT=endT;
-    var rtn = new tdl.models.Model(terrainProgram, arrays, terrainTextures);
+    rtn = new tdl.models.Model(terrainProgram, arrays, terrainTextures);
     return rtn;
 }
 
@@ -351,20 +388,19 @@ function layoutDraggables(){
     for(var di in g_draggableElements)
     {
         var elem=g_draggableElements[di];
-    //    elem.
     }
 }
 
 function makeDraggableElement(targElem){
     g_draggableElements.push(targElem);
     targElem.draggable=true;
+    targElem.preferredSize={x:parseInt(targElem.clientWidth),y:parseInt(targElem.clientHeight)};
     targElem.onmousedown=function(evt){
         //console.log("eclick start");
-        
         if(!evt.target.draggable)return;
         g_dragElement=evt.target;
         evt.target.dragOrg={x:evt.pageX-evt.target.offsetLeft,y:evt.pageY-evt.target.offsetTop};
-//        evt.target.beingDragged=true;
+        //evt.target.beingDragged=true;
         //console.log("dragElem start");
         doPreventDefault(evt);
     }
@@ -520,9 +556,9 @@ function recvFromServer(msg){
                 break;
             }
         }else if(c=='ctrl'){
-            var objID=cmd[++idx];
+            objID=cmd[++idx];
             idx++;
-            var fix=fixtures[objID];
+            fix=fixtures[objID];
             if(remaining<15){//cmd + objID + 16 flt
                 badPacketCount++;
                 break;
@@ -565,7 +601,6 @@ function initialize() {
     gl = tdl.webgl.setupWebGL(canvas);
 
     g_videoElement = document.getElementById("video");
-    g_videoElement = document.getElementById("video");
     //g_videoElement.addEventListener("canplaythrough", startVideo, true);
     //g_videoElement.play();
     g_videoElement.volume=0;
@@ -597,8 +632,9 @@ function initialize() {
     //g_videoElement.addEventListener("ended", videoDone, true);
 
     skybox = setupSkybox();
-
-    setInterval(updateLocalVideoTexture, 66);//66=15 fps.. 33=30fps 16=60fps
+    
+    if(g_localVideoEnabled)
+        setInterval(updateLocalVideoTexture, 66);//66=15 fps.. 33=30fps 16=60fps
 	
     //setInterval(updateDynamicTexture, 66);//66=15 fps.. 33=30fps 16=60fps
 
@@ -707,6 +743,11 @@ function initialize() {
         //    console.log("drag:"+g_dragDelta.x+","+g_dragDelta.y);
             g_dragElement.style.left=(e.pageX-g_dragElement.dragOrg.x);
             g_dragElement.style.top=(e.pageY-g_dragElement.dragOrg.y);
+            
+            //g_dragElement.style.width=parseInt(g_dragElement.style.width)+g_dragDelta.x;
+            //g_dragElement.style.height=parseInt(g_dragElement.style.height)+g_dragDelta.y;
+            
+            
         }else{
             if ((g_buttons & 1) || (document.pointerLockEnabled)) {
                 g_viewRotation[0] += g_dragDelta.y *  0.01;
@@ -741,7 +782,26 @@ function initialize() {
         updateControlKeys(e.keyCode, false);
     }
 
-    connectToChatServer();
+    var iosocket=connectToChatServer();    
+    
+    iosocket.on('connect', function () {
+        networkAttachClientListeners();
+        iosocket.on('sim', function(data) {
+            recvFromServer(data);
+        });
+        iosocket.on('video', videoStreamHandler);
+        iosocket.on('playerState', function(state) {
+            var plr=g_playerList[state.id];
+            for(var k in state)plr[k]=state[k];
+        });
+        iosocket.on('chat', function(msg) {
+            var player=g_playerList[msg.id];
+            if(player){
+                renderPlayerImage(player,getPlayerImageBuffer(player.id));
+                updateDynamicTexture();
+            }
+        });
+    });
     
     gameLoop();
     return true;
@@ -811,7 +871,7 @@ function updateControlKeys(keyCode, state) {
         var wasdown=g_keyWasDown[keyCode];
         if((wasdown==undefined)||(wasdown==false))g_keyWasDown[keyCode]=true;
         else
-            return; //Debounce
+            return false; //Debounce
     }else{
         g_keyWasDown[keyCode]=false;
     }
@@ -1159,9 +1219,9 @@ function renderHuds(){
 //    }
     for(var pk in g_playerList){
         var p=g_playerList[pk];
-        if(p.avatar){
+        if(p.avatar && (g_remoteVideoEnabled||(p==g_localPlayer&&g_localVideoEnabled))){
             var fix = fixturesById[p.avatar];
-            for(var t=12;t<16;t++)m4t0[t]=fix.matrix[t];
+            for(t=12;t<16;t++)m4t0[t]=fix.matrix[t];
             
             var idx=p.index;
             var xpos=parseInt(idx/4);
@@ -1231,7 +1291,7 @@ function renderForward(){
     drawPrep(tobj.model,tobj.shaderConst);
     for(var tx=minTx;tx<maxTx;tx++)
         for(var ty=minTy;ty<maxTy;ty++){
-            var tobj=terrains[tx][ty];
+            tobj=terrains[tx][ty];
             fast.matrix4.translation(world, [tx*g_terrainPatchSize, 0, ty*g_terrainPatchSize]);
             setWorld(world);
             draw(tobj.model,tobj.shaderPer);
@@ -1258,7 +1318,7 @@ function renderForward(){
         waterObject.model.textures.depthSampler.texture=saveDepth;
 
         if(g_renderDebugBodies)
-            for (var i = 0; i < bodies.length; i++)bodies[i].draw(bodies[i].radius);
+            for (i = 0; i < bodies.length; i++)bodies[i].draw(bodies[i].radius);
         g_debugObjectQueue.draw();
 	
 	
@@ -1458,8 +1518,34 @@ function render(){
 */   
 }
 
+function objToString(obj,idepth,imaxdepth){
+    var depth=idepth?idepth:0;
+    var maxdepth=imaxdepth?imaxdepth:2;
+    
+    var indent=(new Array(depth+1)).join("&nbsp;&nbsp;&nbsp;&nbsp;");
+    var dstr="";
+    for(var k in obj){
+        var o=obj[k];
+        var t=typeof(o);
+        dstr+=indent;
+        dstr+=""+k+" = ";
+        if(t=="object"){
+            if(depth<maxdepth)
+                dstr+="{</br>"+objToString(o,depth+1)+indent+"}</br>";
+            else
+                dstr+="...";
+        }else if(t=="function"){
+            dstr+="function";
+        }else
+            dstr+=obj[k];
+        dstr+="</br>";
+    }
+    return dstr;
+}
+
 var sumTime=0.0;
 var avgAt1k=0;
+
 function gameLoop() { //17H X7Y2
  
     if(g_appBroken)return;
@@ -1518,15 +1604,22 @@ function gameLoop() { //17H X7Y2
         var endSim = (new Date()).getTime() * 0.001;
         sumTime+=(endSim-now);
         var avgTime=parseInt((sumTime/g_frameCount)*100000.0);
-        debugTextElem.innerHTML="msimtime:"+avgTime;//(endSim-now)*100000.0);
-                
+        var dstr="msimtime:"+avgTime;//(endSim-now)*100000.0);
         if(steps>=maxSteps)
-            debugTextElem.innerHTML+=":"+steps;
+            dstr+=":"+steps;
         if(g_frameCount===1000)
             avgAt1k=avgTime;
-        debugTextElem.innerHTML+=":"+avgAt1k;
-        debugTextElem.innerHTML+=":"+g_frameCount;
+        dstr+=":"+avgAt1k;
+        dstr+=":"+g_frameCount;
         
+
+        //Render debug data for fixtures
+        if(g_targetFixture.debugData){
+            dstr+="</br>";
+            dstr+=objToString(g_targetFixture.debugData);
+        }
+        
+        debugTextElem.innerHTML=dstr;
     }
     render();
 
@@ -1540,86 +1633,3 @@ function gameLoop() { //17H X7Y2
 
 
 
-
-/*********** NETWORKING *********/
-
-var g_playerList={};
-var g_localPlayer=undefined;
-var g_networkId=null;
-var iosocket;
-
-
-function rebuildPlayerList()
-{   
-    var elem=document.getElementById("playerList");
-    var str="<list>PlayerList:</br>\n";
-    for(var key in g_playerList){
-        var p=g_playerList[key];
-        str+="<li>"+p.nick+"</li>\n";
-    }
-    str+="</list>";
-    elem.innerHTML=str;
-}
-
-
-function connectToChatServer()
-{
-    var incomingChatElem=document.getElementById('incomingChatMessages');
-    var outgoingChatElem=document.getElementById('outgoingChatMessage');
-    iosocket = io.connect("/");//:3001");
-    iosocket.on('connect', function () {
-        incomingChatElem.innerHTML+='<li>Connected</li>';
-        iosocket.on('video', videoStreamHandler);
-        iosocket.on('welcome', function(data) {
-            console.log("got welcome");
-            g_networkId = data;
-            iosocket.emit('control',g_targetFixture.id);    //Attempt to take control of our targeted fixture
-        });
-        iosocket.on('players', function(players) {
-            g_playerList = players;
-            g_localPlayer=g_playerList[g_networkId];
-            rebuildPlayerList();
-        });
-        iosocket.on('sim', function(data) {
-            recvFromServer(data);
-        });
-        iosocket.on('chat', function(msg) {
-            var player=g_playerList[msg.id];
-            if(player){
-                player.chat=msg.message;
-                incomingChatElem.innerHTML+='<li>'+player.name+":"+player.chat+'</li>';
-                renderPlayerImage(player,getPlayerImageBuffer(player.id));
-                updateDynamicTexture();
-            }
-        });
-        iosocket.on('playerState', function(state) {
-            var plr=g_playerList[state.id];
-            for(var k in state)plr[k]=state[k];
-        });
-
-        iosocket.on('disconnect', function() {incomingChatElem.innerHTML+='<li>Disconnected</li>';});
-    });
-    outgoingChatElem.onkeypress=function(event) {
-        if(event.which == 13) {
-            doPreventDefault(event);
-
-            iosocket.emit('chat',outgoingChatElem.value);
-
-            var ourPlayer=g_playerList[g_networkId];
-            if(ourPlayer){
-                ourPlayer.chat=outgoingChatElem.value;
-                incomingChatElem.innerHTML+='<li>'+ourPlayer.nick+":"+outgoingChatElem.value+'</li>';
-            }else{
-                incomingChatElem.innerHTML+='<li>Not connected:'+outgoingChatElem.value+'</li>';                
-            }
-            outgoingChatElem.value='';
-            outgoingChatElem.blur();
-            /*
-            setTimeout(new function(){
-                renderPlayerImage(ourPlayer,getPlayerImageBuffer(ourPlayer.id));
-                updateDynamicTexture();
-                },1000);
-            */
-        }
-    };
-};

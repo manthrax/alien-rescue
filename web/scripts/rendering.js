@@ -22,7 +22,7 @@ var orthoWorldInverse = new Float32Array(16);
 var orthoViewProjection = new Float32Array(16);
 var orthoWorldViewProjection = new Float32Array(16);
 
-var orthoWorldInverse = new Float32Array(16);
+
 var orthoViewInverse = new Float32Array(16);
 var orthoProjectionInverse = new Float32Array(16);
 var orthoViewProjectionInverse = new Float32Array(16);
@@ -152,7 +152,7 @@ function textureLoad(str){
         return g_textureDB[str];
     }else{
         g_textureLoadRequestCount++;
-        var imgElem=str;//findImgElemBySrc(str);
+        imgElem=str;//findImgElemBySrc(str);
         if(imgElem===null)imgElem=str;
         g_textureDB[str]=tdl.textures.loadTexture(imgElem,false,textureLoaded);
         return g_textureDB[str];

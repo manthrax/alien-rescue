@@ -43,6 +43,8 @@ function updateCarFixture() {
     
     
    
+    var vproj=0.40;
+    var rproj=0.45;
     //Apply steering impulse
     v3copy(tmp,right);
     if(flwheel.colliding && frwheel.colliding){
@@ -56,22 +58,26 @@ function updateCarFixture() {
             v3subv(tmp,tmp,right);
         }
         v3normalizev(tmp,tmp);
-        projectBodyVelocity(flwheel,tmp);
-        projectBodyVelocity(frwheel,tmp);
+        projectBodyVelocity(flwheel,tmp,vproj);
+        projectBodyVelocity(frwheel,tmp,vproj);
     }
     if(blwheel.colliding && brwheel.colliding){
         v3copy(tmp,right);
         v3normalizev(tmp,tmp);
-        projectBodyVelocity(blwheel,tmp);
-        projectBodyVelocity(brwheel,tmp);
+        projectBodyVelocity(blwheel,tmp,rproj);
+        projectBodyVelocity(brwheel,tmp,rproj);
     }
     //end steering impulse
     
     v3mulv(imp,fwd,controls.inputs.thrust*0.1);
-    v3addv(flwheel.linearVelocity,flwheel.linearVelocity, imp);
-    v3addv(frwheel.linearVelocity,frwheel.linearVelocity, imp);
-    v3addv(blwheel.linearVelocity,blwheel.linearVelocity, imp);
-    v3addv(brwheel.linearVelocity,brwheel.linearVelocity, imp);
+    if(blwheel.colliding && brwheel.colliding){
+        v3addv(blwheel.linearVelocity,blwheel.linearVelocity, imp);
+        v3addv(brwheel.linearVelocity,brwheel.linearVelocity, imp);
+    }
+    if(flwheel.colliding && frwheel.colliding){
+        v3addv(flwheel.linearVelocity,flwheel.linearVelocity, imp);
+        v3addv(frwheel.linearVelocity,frwheel.linearVelocity, imp);
+    }
 
     v3mulv(tmp,up,-0.03)
     v3addv(centroid,centroid,tmp);
@@ -86,7 +92,8 @@ function updateCarFixture() {
         cameraTrackFixture(fwd,up,right);
     
     
-    
+    //dampBodies(fi,0.998,0.998);
+    //Car fixture
 }
 
 function updateBoatFixture() {
@@ -225,6 +232,52 @@ function updatePlaneFixture() {
 
     }
 
+    //Simulate thrust
+
+    var thrust=controls.inputs.thrust*0.2;
+    v3mulv(imp,fwd,thrust);
+    
+    
+    //Airspeed dynamics
+    v3set(cvel,0,0,0);
+    for(i=0;i<fi.bodies.length;i++)
+        v3addv(cvel,cvel, fi.bodies[i].linearVelocity);
+    
+    var airspeed=Math.abs(v3dot(fwd,cvel)/fi.bodies.length);
+    
+    var maxAirSpeed=3.0;
+    var nairspeed=airspeed>maxAirSpeed?1.0:airspeed/maxAirSpeed;
+    
+    if(!fi.debugData)fi.debugData={bodies:fi.bodies};//{controls:fi.controls};
+    fi.debugData.nairspeed=nairspeed;
+    
+    var cdot=airspeed*0.001; //INcrease this for shorter takeoffs
+    cdot=cdot<0.0?0.0:cdot; //Cancel lift inreverse
+    if(cdot>-gravity[1])cdot=-gravity[1];
+
+    var drag=1.0-((cdot/-gravity[1])*0.01);
+    fi.debugData.drag=drag;
+//cdot*=0.1;
+
+    fi.debugData.lift=cdot;
+    v3mulv(tmp,up,cdot);    //Lift impulse
+    v3addv(imp,imp,tmp);
+    
+    for(i=0;i<fi.bodies.length;i++)
+        v3addv(fi.bodies[i].linearVelocity,fi.bodies[i].linearVelocity, imp);
+
+//drag*=0.999;
+    for(i=0;i<fi.bodies.length;i++)
+        v3mulv(fi.bodies[i].linearVelocity,fi.bodies[i].linearVelocity, drag);
+      //End lift sim
+  
+  //Aerodynamics
+    //ddamp lateral velocities..
+    
+    dampVelocities(fi.bodies,right,0.05*nairspeed,0.05);
+    dampVelocities(fi.bodies,up,0.05*nairspeed);
+
+
 //Roll force
     v3mulv(tmp,up,controls.inputs.roll*1.1);
     v3addv(frwheel.linearVelocity,frwheel.linearVelocity,tmp);
@@ -243,40 +296,6 @@ function updatePlaneFixture() {
     v3addv(brwheel.linearVelocity,brwheel.linearVelocity,tmp);
     //v3mulv(tmp,tmp,-1.0);
     v3addv(blwheel.linearVelocity,blwheel.linearVelocity,tmp);
-
-    //Simulate thrust
-
-    v3set(cvel,0,0,0);
-    for(i=0;i<fi.bodies.length;i++)
-        v3addv(cvel,cvel, fi.bodies[i].linearVelocity);
-    
-    var airspeed=v3dot(fwd,cvel);
-    var thrust=controls.inputs.thrust*0.2;
-    v3mulv(imp,fwd,thrust);
-    var cdot=airspeed;
-    cdot*=1.0/5.0;
-    cdot*=1.12; //INcrease this for shorter takeoffs
-    cdot=cdot<0.0?0.0:cdot; //Cancel lift inreverse
-    if(cdot>-gravity[1])cdot=-gravity[1];
-    var drag=1.0-((cdot/-gravity[1])*0.001);
-
-//cdot*=0.1;
-    v3mulv(tmp,up,cdot);    //Lift impulse
-    v3addv(imp,imp,tmp);
-    
-    for(i=0;i<fi.bodies.length;i++)
-        v3addv(fi.bodies[i].linearVelocity,fi.bodies[i].linearVelocity, imp);
-
-drag*=0.999;
-    for(i=0;i<fi.bodies.length;i++)
-        v3mulv(fi.bodies[i].linearVelocity,fi.bodies[i].linearVelocity, drag);
-      //End lift sim
-  
-  //Aerodynamics
-    //ddamp lateral velocities..
-    dampVelocities(fi.bodies,right,0.05);
-    dampVelocities(fi.bodies,up,0.05);
-
 
 //do camera tracking
     v3mulv(fwd,fwd,-1.0);
@@ -306,8 +325,8 @@ function updateRalienFixture() {
     
     
     var controls=fi.controls;
-    
-    fi.bodies[1].linearVelocity = v3subv(fi.bodies[1].linearVelocity,fi.bodies[1].linearVelocity, v3mulv(tmp,gravity,1.1));
+    if(fi.bodies[0].colliding)
+        fi.bodies[1].linearVelocity = v3subv(fi.bodies[1].linearVelocity,fi.bodies[1].linearVelocity, v3mulv(tmp,gravity,1.1));
     if(!fi.animCountdown){
         fi.animCountdown=1;//parseInt((Math.random()*100.0)+60);
         var b0=fi.bodies[0];
@@ -344,11 +363,24 @@ function updateRalienFixture() {
 }
 
 
-function dampVelocities(bodies,right,amt){
+function dampVelocities(bodies,normal,amt,colAmt){
+    if(!colAmt)colAmt=amt;
     for(var i=0;i<bodies.length;i++){	//Damp lateral velocities
-        var vl = bodies[i].linearVelocity; //Front left
-        v3addv(vl,vl,v3mulv(v3t0,right,v3dot(vl,right)*-amt));	//Damp l->r lateral velocity
+        var bod=bodies[i];
+        var vl = bod.linearVelocity; //Front left
+        v3addv(vl,vl,v3mulv(v3t0,normal,v3dot(vl,normal)*-(bod.colliding?colAmt:amt)));	//Damp l->r lateral velocity
     }
+}
+
+function dampBodies(fi,collidingDamping,freeDamping){
+    for(var t=0;t<fi.bodies.length;t++){
+        var b=fi.bodies[t];
+        if(b.colliding)
+            v3mulv(b.linearVelocity,b.linearVelocity,collidingDamping);
+        else
+            v3mulv(b.linearVelocity,b.linearVelocity,freeDamping);
+    }
+
 }
 
 function updateChopperFixture() {
@@ -438,6 +470,7 @@ function updateChopperFixture() {
         if(fi.engineSound.active==true)
             fi.engineSound.stop();
     }
+    dampBodies(fi,0.98,0.998);
 }
 
 

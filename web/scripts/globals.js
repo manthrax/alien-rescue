@@ -11,10 +11,15 @@ var g_debug = false; // whether or not to debug.
 var g_drawOnce = false; // draw just one frame.
 var g_paused = false;
 var g_enableConstraints = true;
+
+var g_localVideoEnabled = false;
+var g_remoteVideoEnabled = false;
+
 var g_camRay={
     start:vec3f(0,0,0),
     end:vec3f(0,0,0)
     };
+    
 var g_cameraPathTarget=vec3f(0,0,0);
 var g_cameraPathTime=0.0;
 

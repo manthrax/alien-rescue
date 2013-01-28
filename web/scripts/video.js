@@ -22,10 +22,10 @@ if(navigator.webkitGetUserMedia) {
 //var img=document.getElementById("frame");
 var g_dynamicCanvas=document.getElementById("dynamicCanvas");
 var dynCtx = g_dynamicCanvas.getContext('2d');
-dynCtx.font        = "normal 12px Arial";
-dynCtx.fillStyle="#FFFF00";
+dynCtx.font        = "normal 14px Arial";
+dynCtx.fillStyle = "#FFFF00";
 dynCtx.strokeStyle = "#000000";
-dynCtx.textAlign='center';
+dynCtx.textAlign = 'center';
 //dynCtx.font = 'italic 40px Calibri';
 var g_videoImageBuffers={};
 var g_videoThumbWidth=128;
@@ -110,7 +110,8 @@ function drawVideo(v, bc, w, h) {   //This renders a frame from the video, onto 
     }
 
     // Start over! 10 frames a second = 100milliseconds
-    setTimeout(function(){ drawVideo(v, bc, w, h); },1000);
+    if(g_localVideoEnabled)
+        setTimeout(function(){ drawVideo(v, bc, w, h); },1000);
 }
 
 

@@ -75,12 +75,12 @@ function v3sqlen(va){
     return va[0]*va[0]+va[1]*va[1]+va[2]*va[2];
 }
 
-var v3_min_len=0.0001
+var v3_min_len=0.0000001
 function v3len(va) {
-	var vd=v3dot(va, va);
-	if(vd>(v3_min_len*v3_min_len))
-	   return Math.sqrt(vd);
-	else return v3_min_len;
+    var vd=v3dot(va, va);
+    if(vd>(v3_min_len*v3_min_len))
+       return Math.sqrt(vd);
+    else return 0.0;//v3_min_len;
 }
 
 function v3add(va, vb) {
@@ -96,6 +96,7 @@ function v3mul(va, vx) {
 function v3div(va, vx) {
     return [va[0] / vx, va[1] / vx, va[2] / vx];
 }
+
 var gotnan=false;
 function nanicheck(v,idx){
     if(gotnan)return;
@@ -104,9 +105,13 @@ function nanicheck(v,idx){
         gotnan=true;
     }
 }
+
 function v3normalize(va) {
     var ln = v3len(va);
-	if(ln<v3_min_len)return [0,0,0];
+    if(ln<v3_min_len){
+        console.log("bad normalize");
+        return [0,1,0];
+    }
     return [va[0] / ln, va[1] / ln, va[2] / ln];
 }
 
@@ -148,7 +153,7 @@ function v3crossv(vr, va, vb) {
 
 function v3normalizev(vr, va) {
     var ln = v3len(va);
-	if(ln<v3_min_len)return v3copy(vr,va);
+    if(ln<v3_min_len)return v3copy(vr,va);
     vr[0] = va[0] / ln;
     vr[1] = va[1] / ln;
     vr[2] = va[2] / ln;

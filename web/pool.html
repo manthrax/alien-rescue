@@ -1,0 +1,73 @@
+<html>
+<style>
+    * { margin: 0; padding: 0;}
+
+    body, html { height:100%; }
+
+    #dynamicCanvas {
+        position:absolute;
+        width:100%;
+        height:100%;
+    }
+    .uiComponent, .uiElem, input, button{
+        z-index: 2;
+        color: yellow;
+        font-family: sans-serif;
+        font-size: small;
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 3px;
+        padding: 1px;
+        user-select: none;
+    }
+    .uiInput, input {
+        border: 1px dotted yellow;
+    }
+    button {
+        border: 1px solid yellow;
+    }
+    .uiElem {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        overflow: hidden;
+        border-radius: 6px;
+        padding: 4px;
+        user-select: none;
+    }
+    
+
+</style>
+<body>
+    <script type="text/javascript" src="scripts/socket.io-client\dist\socket.io.js"></script>
+    <script type="text/javascript" src="scripts/util.js"></script>
+    <script type="text/javascript" src="scripts/audio.js"></script>
+    <script type="text/javascript" src="scripts/rendering.js"></script>
+    <script type="text/javascript" src="scripts/globals.js"></script>
+    <script type="text/javascript" src="scripts/network.js"></script>
+    <script type="text/javascript" src="scripts/simulation.js"></script>
+    <canvas id="dynamicCanvas" ></canvas>
+    
+    <div class="uiElem" id="playerList" style="">
+        <ul id="playerListElems"></ul>
+    </div>
+    <div class="uiElem" id="incomingChatMessages" style="top: 150;">
+        incoming
+    </div>
+    <div class="uiElem" id="outgoingChatDiv" style="top: 300;">
+        Outgoing:&nbsp;
+        <ul id="incomingChatMessages"></ul>
+        <input class="uiComponent" type="text" id="outgoingChatMessage">
+    </div>
+    <div class="uiElem" id="gameState" style="top: 450;">
+        Game
+    </div>
+    <script type="text/javascript" src="scripts/poolSim.js"></script>
+    <img id="cueImage" src="assets/0001.png" style="display:none" onload="g_poolSim.assetLoaded();"/>
+    <img id="tableImage" src="assets/table.png" style="display:none" onload="g_poolSim.assetLoaded();"/>
+    <audio id="ballBall" src="assets/ballball.ogg" style="display:none" oncanplaythrough="g_poolSim.assetLoaded();"></audio>
+    <audio id="ballCue" src="assets/ballcue.ogg" style="display:none" oncanplaythrough="g_poolSim.assetLoaded();"></audio>
+    <audio id="ballRail" src="assets/ballrail.ogg" style="display:none" oncanplaythrough="g_poolSim.assetLoaded();"></audio>
+    <audio id="ballPocket" src="assets/ballpocket.ogg" style="display:none" oncanplaythrough="g_poolSim.assetLoaded();"></audio>
+
+</body>
+</html>
